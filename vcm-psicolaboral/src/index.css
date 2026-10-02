@@ -1,0 +1,42 @@
+:root {
+  --vc-azul: #0b4f6c;
+  --vc-azul-claro: #1479a3;
+}
+
+body {
+  background-color: #f4f7f9;
+  min-height: 100vh;
+}
+
+.texto-marca {
+  color: var(--vc-azul);
+}
+
+.fondo-marca {
+  background-color: var(--vc-azul);
+}
+
+.fondo-marca-claro {
+  background-color: var(--vc-azul-claro);
+}
+
+.btn-marca {
+  background-color: var(--vc-azul);
+  border-color: var(--vc-azul);
+  color: #fff;
+}
+
+.btn-marca:hover,
+.btn-marca:focus {
+  background-color: var(--vc-azul-claro);
+  border-color: var(--vc-azul-claro);
+  color: #fff;
+}
+
+.card-altura {
+  height: 100%;
+}
+
+.contenido-principal {
+  padding-bottom: 3rem;
+}
