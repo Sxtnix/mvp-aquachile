@@ -77,7 +77,7 @@ export default function SolicitudesPanel({
               <th>Estado</th>
               <th className="d-none d-md-table-cell">Fecha</th>
               <th className="d-none d-lg-table-cell">Responsable</th>
-              <th className="text-end">Acción</th>
+              <th className="text-end text-nowrap">Acción</th>
             </tr>
           </thead>
           <tbody>
@@ -103,7 +103,7 @@ export default function SolicitudesPanel({
                     <td className="d-none d-lg-table-cell">
                       {solicitud.responsable}
                     </td>
-                    <td className="text-end">
+                    <td className="text-end text-nowrap">
                       <Link
                         to={`/solicitudes/${solicitud.id}`}
                         className="btn btn-sm btn-outline-secondary"

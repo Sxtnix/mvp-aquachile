@@ -54,9 +54,11 @@ export default function CandidatosPage() {
             Registrar candidato
           </Link>
         ) : (
-          <span className="badge text-bg-secondary">
-            Solo consulta: rol Evaluador
-          </span>
+          <div>
+            <span className="badge text-bg-secondary">
+              Solo consulta: rol Evaluador
+            </span>
+          </div>
         )}
       </div>
 

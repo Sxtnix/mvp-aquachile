@@ -107,7 +107,9 @@ export default function SolicitudDetallePage() {
             {solicitud.cargo} · Familia {solicitud.familia}
           </p>
         </div>
-        <BadgeEstado estado={solicitud.estado} />
+        <div>
+          <BadgeEstado estado={solicitud.estado} />
+        </div>
       </div>
 
       {sinAsignar ? (
@@ -168,11 +170,15 @@ export default function SolicitudDetallePage() {
                 <h2 className="h6 text-uppercase text-secondary mb-0">
                   Evaluación psicolaboral
                 </h2>
-                {evaluacion ? (
-                  <span className="badge text-bg-success">Registrada</span>
-                ) : (
-                  <span className="badge text-bg-secondary">Sin registrar</span>
-                )}
+                <div>
+                  {evaluacion ? (
+                    <span className="badge text-bg-success">Registrada</span>
+                  ) : (
+                    <span className="badge text-bg-secondary">
+                      Sin registrar
+                    </span>
+                  )}
+                </div>
               </div>
 
               {guardado ? (
