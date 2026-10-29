@@ -1,148 +1,62 @@
-import { createContext, useContext, useMemo, useState } from "react";
 import {
-  candidatosIniciales,
-  evaluacionesIniciales,
-  PERFILES,
-  solicitudesIniciales,
-} from "../data/datosFicticios.js";
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useReducer,
+} from "react";
+import { PERFILES } from "../data/catalogos.js";
+import { PERMISOS, estadoInicial, reducer } from "./motorEstado.js";
 
 const AppContext = createContext(null);
 
-const PERMISOS = {
-  Analista: {
-    crearCandidato: true,
-    editarCandidato: true,
-    eliminarCandidato: true,
-    crearSolicitud: true,
-    editarEvaluacion: false,
-    cambiarEstado: false,
-  },
-  Evaluador: {
-    crearCandidato: false,
-    editarCandidato: false,
-    eliminarCandidato: false,
-    crearSolicitud: false,
-    editarEvaluacion: true,
-    cambiarEstado: true,
-  },
-};
-
-function siguienteId(registros) {
-  return registros.reduce((max, item) => Math.max(max, item.id), 0) + 1;
-}
-
 export function AppProvider({ children }) {
-  const [candidatos, setCandidatos] = useState(candidatosIniciales);
-  const [solicitudes, setSolicitudes] = useState(solicitudesIniciales);
-  const [evaluaciones, setEvaluaciones] = useState(evaluacionesIniciales);
-  const [perfilActivo, setPerfilActivo] = useState("analista");
+  const [estado, dispatch] = useReducer(reducer, estadoInicial);
 
-  const perfil = PERFILES[perfilActivo];
-  const permisos = PERMISOS[perfilActivo === "analista" ? "Analista" : "Evaluador"];
+  const perfil = PERFILES[estado.perfilActivo];
+  const permisos = PERMISOS[estado.perfilActivo];
+  const puede = useCallback(
+    (accion) => Boolean(permisos[accion]),
+    [permisos]
+  );
 
-  const puede = (accion) => Boolean(permisos[accion]);
-
-  const verTodasLasSolicitudes = perfilActivo === "analista";
+  const veTodas =
+    estado.perfilActivo === "analista" || estado.perfilActivo === "jefatura";
 
   const solicitudesVisibles = useMemo(() => {
-    if (verTodasLasSolicitudes) return solicitudes;
-    return solicitudes.filter(
+    if (veTodas) return estado.solicitudes;
+    return estado.solicitudes.filter(
       (solicitud) => solicitud.responsable === perfil.nombre
     );
-  }, [solicitudes, verTodasLasSolicitudes, perfil.nombre]);
+  }, [estado.solicitudes, veTodas, perfil.nombre]);
 
-  const obtenerCandidato = (id) =>
-    candidatos.find((candidato) => candidato.id === Number(id));
-
-  const agregarCandidato = (datos) => {
-    const nuevo = { ...datos, id: siguienteId(candidatos) };
-    setCandidatos((actual) => [...actual, nuevo]);
-    return nuevo.id;
-  };
-
-  const actualizarCandidato = (id, datos) => {
-    setCandidatos((actual) =>
-      actual.map((candidato) =>
-        candidato.id === Number(id) ? { ...candidato, ...datos } : candidato
-      )
-    );
-  };
-
-  const eliminarCandidato = (id) => {
-    setCandidatos((actual) =>
-      actual.filter((candidato) => candidato.id !== Number(id))
-    );
-    setSolicitudes((actual) =>
-      actual.filter((solicitud) => solicitud.candidatoId !== Number(id))
-    );
-  };
-
-  const crearSolicitud = (datos) => {
-    const nueva = {
-      ...datos,
-      id: siguienteId(solicitudes),
-      estado: "Pendiente",
-    };
-    setSolicitudes((actual) => [...actual, nueva]);
-    return nueva.id;
-  };
-
-  const cambiarEstadoSolicitud = (id, estado) => {
-    setSolicitudes((actual) =>
-      actual.map((solicitud) =>
-        solicitud.id === Number(id) ? { ...solicitud, estado } : solicitud
-      )
-    );
-  };
-
-  const guardarEvaluacion = (solicitudId, datos) => {
-    const idSolicitud = Number(solicitudId);
-    setEvaluaciones((actual) => {
-      const existente = actual.find(
-        (evaluacion) => evaluacion.solicitudId === idSolicitud
-      );
-      if (existente) {
-        return actual.map((evaluacion) =>
-          evaluacion.solicitudId === idSolicitud
-            ? { ...evaluacion, ...datos }
-            : evaluacion
-        );
-      }
-      return [
-        ...actual,
-        {
-          ...datos,
-          id: siguienteId(actual),
-          solicitudId: idSolicitud,
-        },
-      ];
-    });
-  };
-
-  const evaluacionDe = (solicitudId) =>
-    evaluaciones.find(
-      (evaluacion) => evaluacion.solicitudId === Number(solicitudId)
-    );
-
-  const valor = {
-    candidatos,
-    solicitudes,
-    evaluaciones,
-    solicitudesVisibles,
-    perfil,
-    perfilActivo,
-    setPerfilActivo,
-    puede,
-    verTodasLasSolicitudes,
-    obtenerCandidato,
-    agregarCandidato,
-    actualizarCandidato,
-    eliminarCandidato,
-    crearSolicitud,
-    cambiarEstadoSolicitud,
-    guardarEvaluacion,
-    evaluacionDe,
-  };
+  const valor = useMemo(
+    () => ({
+      candidatos: estado.candidatos,
+      solicitudes: estado.solicitudes,
+      solicitudesVisibles,
+      evaluaciones: estado.evaluaciones,
+      bitacora: estado.bitacora,
+      perfil,
+      perfilActivo: estado.perfilActivo,
+      veTodasLasSolicitudes: veTodas,
+      puede,
+      dispatch,
+      obtenerCandidato: (id) =>
+        estado.candidatos.find((candidato) => candidato.id === Number(id)),
+      obtenerSolicitud: (id) =>
+        estado.solicitudes.find((solicitud) => solicitud.id === Number(id)),
+      evaluacionDe: (solicitudId) =>
+        estado.evaluaciones.find(
+          (evaluacion) => evaluacion.solicitudId === Number(solicitudId)
+        ),
+      bitacoraDe: (solicitudId) =>
+        estado.bitacora
+          .filter((registro) => registro.solicitudId === Number(solicitudId))
+          .sort((a, b) => a.fecha.localeCompare(b.fecha)),
+    }),
+    [estado, perfil, veTodas, solicitudesVisibles, puede]
+  );
 
   return <AppContext.Provider value={valor}>{children}</AppContext.Provider>;
 }
