@@ -1,24 +1,26 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext.jsx";
-import CandidatoCard from "../components/CandidatoCard.jsx";
-import { FAMILIAS_CARGO } from "../data/datosFicticios.js";
+import AvisoSimulacion from "../components/AvisoSimulacion.jsx";
+import DialogoConfirmar from "../components/DialogoConfirmar.jsx";
+import FichaCandidato from "../components/FichaCandidato.jsx";
+import { FAMILIAS_CARGO, ORIGENES } from "../data/catalogos.js";
+import { candidatosFiltrados } from "../utils/selectores.js";
 
 export default function CandidatosPage() {
-  const { candidatos, solicitudes, puede, eliminarCandidato } = useApp();
+  const { candidatos, solicitudes, puede, dispatch } = useApp();
   const navigate = useNavigate();
-  const [busqueda, setBusqueda] = useState("");
-  const [familia, setFamilia] = useState("Todas las familias");
-
-  const filtrados = candidatos.filter((candidato) => {
-    const texto = `${candidato.nombre} ${candidato.cargo} ${candidato.correo}`;
-    const coincideBusqueda = texto
-      .toLowerCase()
-      .includes(busqueda.trim().toLowerCase());
-    const coincideFamilia =
-      familia === "Todas las familias" || candidato.familia === familia;
-    return coincideBusqueda && coincideFamilia;
+  const [filtros, setFiltros] = useState({
+    texto: "",
+    familia: "",
+    origen: "",
   });
+  const [porEliminar, setPorEliminar] = useState(null);
+
+  const cambiar = (campo) => (evento) =>
+    setFiltros((actual) => ({ ...actual, [campo]: evento.target.value }));
+
+  const filtrados = candidatosFiltrados(candidatos, filtros);
 
   const estadoDe = (idCandidato) => {
     const solicitud = solicitudes.find(
@@ -27,21 +29,15 @@ export default function CandidatosPage() {
     return solicitud ? solicitud.estado : "Sin solicitud";
   };
 
-  const eliminar = (candidato) => {
-    const tieneSolicitud = solicitudes.some(
-      (item) => item.candidatoId === candidato.id
-    );
-    const mensaje = tieneSolicitud
-      ? `¿Eliminar a ${candidato.nombre} y sus solicitudes asociadas?`
-      : `¿Eliminar a ${candidato.nombre}?`;
-    if (window.confirm(mensaje)) {
-      eliminarCandidato(candidato.id);
-    }
+  const confirmarEliminacion = () => {
+    if (!porEliminar) return;
+    dispatch({ type: "eliminar-candidato", id: porEliminar.id });
+    setPorEliminar(null);
   };
 
   return (
     <>
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
         <div>
           <h1 className="h3 mb-1">Candidatos</h1>
           <p className="text-secondary mb-0">
@@ -54,40 +50,57 @@ export default function CandidatosPage() {
             Registrar candidato
           </Link>
         ) : (
-          <div>
-            <span className="badge text-bg-secondary">
-              Solo consulta: rol Evaluador
-            </span>
-          </div>
+          <span className="badge text-bg-secondary">
+            {puede("editarCandidato") ? "Solo consulta" : "Sin permisos de edición"}
+          </span>
         )}
       </div>
 
+      <AvisoSimulacion />
+
       <div className="row g-2 mb-4">
-        <div className="col-12 col-md-8">
-          <label className="visually-hidden" htmlFor="buscar-candidato">
+        <div className="col-12 col-md-5">
+          <label className="visually-hidden" htmlFor="cand-texto">
             Buscar candidato
           </label>
           <input
-            id="buscar-candidato"
+            id="cand-texto"
             className="form-control"
             placeholder="Buscar por nombre, cargo o correo..."
-            value={busqueda}
-            onChange={(evento) => setBusqueda(evento.target.value)}
+            value={filtros.texto}
+            onChange={cambiar("texto")}
           />
         </div>
 
-        <div className="col-12 col-md-4">
-          <label className="visually-hidden" htmlFor="filtrar-familia">
-            Filtrar por familia de cargo
+        <div className="col-6 col-md-3">
+          <label className="visually-hidden" htmlFor="cand-familia">
+            Familia de cargo
           </label>
           <select
-            id="filtrar-familia"
+            id="cand-familia"
             className="form-select"
-            value={familia}
-            onChange={(evento) => setFamilia(evento.target.value)}
+            value={filtros.familia}
+            onChange={cambiar("familia")}
           >
-            <option>Todas las familias</option>
+            <option value="">Todas las familias</option>
             {FAMILIAS_CARGO.map((opcion) => (
+              <option key={opcion}>{opcion}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="col-6 col-md-4">
+          <label className="visually-hidden" htmlFor="cand-origen">
+            Origen
+          </label>
+          <select
+            id="cand-origen"
+            className="form-select"
+            value={filtros.origen}
+            onChange={cambiar("origen")}
+          >
+            <option value="">Todos los orígenes</option>
+            {ORIGENES.map((opcion) => (
               <option key={opcion}>{opcion}</option>
             ))}
           </select>
@@ -101,10 +114,12 @@ export default function CandidatosPage() {
       ) : (
         <div className="row g-3">
           {filtrados.map((candidato) => (
-            <CandidatoCard
+            <FichaCandidato
               key={candidato.id}
               nombre={candidato.nombre}
               cargo={candidato.cargo}
+              familia={candidato.familia}
+              ubicacion={candidato.ubicacion}
               estado={estadoDe(candidato.id)}
               correo={candidato.correo}
               telefono={candidato.telefono}
@@ -122,7 +137,7 @@ export default function CandidatosPage() {
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-danger"
-                      onClick={() => eliminar(candidato)}
+                      onClick={() => setPorEliminar(candidato)}
                     >
                       Eliminar
                     </button>
@@ -133,6 +148,19 @@ export default function CandidatosPage() {
           ))}
         </div>
       )}
+
+      <DialogoConfirmar
+        abierto={Boolean(porEliminar)}
+        titulo="Eliminar candidato"
+        mensaje={
+          porEliminar
+            ? `¿Eliminar a ${porEliminar.nombre}? También se eliminarán sus solicitudes y evaluaciones asociadas. Esta acción no se puede deshacer.`
+            : ""
+        }
+        etiquetaConfirmar="Eliminar"
+        alConfirmar={confirmarEliminacion}
+        alCancelar={() => setPorEliminar(null)}
+      />
     </>
   );
 }

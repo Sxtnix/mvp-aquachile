@@ -1,4 +1,4 @@
-export default function BadgeEstado({ estado }) {
+export default function EtiquetaEstado({ estado }) {
   const clases = {
     Pendiente: "text-bg-secondary",
     "En proceso": "text-bg-warning",

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { PERFILES } from "../data/datosFicticios.js";
+import { PERFILES } from "../data/catalogos.js";
 import { useApp } from "../context/AppContext.jsx";
 
 const enlaces = [
@@ -10,11 +10,11 @@ const enlaces = [
 ];
 
 export default function Layout() {
-  const { perfil, perfilActivo, setPerfilActivo } = useApp();
+  const { perfil, perfilActivo, dispatch } = useApp();
   const [abierto, setAbierto] = useState(false);
 
   const cambiarPerfil = (clave) => {
-    setPerfilActivo(clave);
+    dispatch({ type: "cambiar-perfil", perfil: clave });
     setAbierto(false);
   };
 
@@ -79,7 +79,7 @@ export default function Layout() {
                     }`}
                     onClick={() => cambiarPerfil(clave)}
                   >
-                    {clave === "analista" ? "Analista" : "Evaluador"}
+                    {dato.etiqueta}
                   </button>
                 ))}
               </div>

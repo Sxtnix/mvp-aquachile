@@ -3,6 +3,7 @@ import Layout from "./components/Layout.jsx";
 import CandidatoFormPage from "./pages/CandidatoFormPage.jsx";
 import CandidatosPage from "./pages/CandidatosPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
+import NoEncontradaPage from "./pages/NoEncontradaPage.jsx";
 import SolicitudDetallePage from "./pages/SolicitudDetallePage.jsx";
 import SolicitudFormPage from "./pages/SolicitudFormPage.jsx";
 import SolicitudesPage from "./pages/SolicitudesPage.jsx";
@@ -18,7 +19,7 @@ export default function App() {
         <Route path="/solicitudes" element={<SolicitudesPage />} />
         <Route path="/solicitudes/nueva" element={<SolicitudFormPage />} />
         <Route path="/solicitudes/:id" element={<SolicitudDetallePage />} />
-        <Route path="*" element={<DashboardPage />} />
+        <Route path="*" element={<NoEncontradaPage />} />
       </Route>
     </Routes>
   );

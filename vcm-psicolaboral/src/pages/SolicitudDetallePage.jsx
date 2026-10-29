@@ -1,38 +1,44 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext.jsx";
-import BadgeEstado from "../components/BadgeEstado.jsx";
+import BitacoraEstados from "../components/BitacoraEstados.jsx";
+import CampoSelect from "../components/CampoSelect.jsx";
+import EtiquetaEstado from "../components/EtiquetaEstado.jsx";
 import {
+  CATEGORIAS_EVALUADOR,
   ESTADOS_SOLICITUD,
   RESULTADOS_EVALUACION,
-} from "../data/datosFicticios.js";
+} from "../data/catalogos.js";
+import { formatFecha, hoyISO } from "../utils/fechas.js";
+import { hayErrores, validarEvaluacion } from "../utils/validaciones.js";
 
 export default function SolicitudDetallePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const {
-    solicitudes,
+    obtenerSolicitud,
     obtenerCandidato,
     evaluacionDe,
-    cambiarEstadoSolicitud,
-    guardarEvaluacion,
+    bitacoraDe,
+    dispatch,
     puede,
-    verTodasLasSolicitudes,
+    veTodasLasSolicitudes,
     perfil,
   } = useApp();
 
-  const solicitud = solicitudes.find((item) => item.id === Number(id));
+  const solicitud = obtenerSolicitud(id);
+  const [guardado, setGuardado] = useState(false);
+  const [errores, setErrores] = useState({});
 
   const [datos, setDatos] = useState(() => {
     const existente = solicitud ? evaluacionDe(solicitud.id) : undefined;
     return {
       fechaEvaluacion: existente?.fechaEvaluacion || "",
-      observaciones: existente?.observaciones || "",
       resultado: existente?.resultado || "",
+      categoria: existente?.categoria || "",
+      observaciones: existente?.observaciones || "",
     };
   });
-  const [guardado, setGuardado] = useState(false);
-  const [intento, setIntento] = useState(false);
 
   if (!solicitud) {
     return (
@@ -49,42 +55,72 @@ export default function SolicitudDetallePage() {
 
   const candidato = obtenerCandidato(solicitud.candidatoId);
   const asignada = solicitud.responsable === perfil.nombre;
-  const sinAsignar = !verTodasLasSolicitudes && !asignada;
+  const sinAsignar = !veTodasLasSolicitudes && !asignada;
   const evaluacion = evaluacionDe(solicitud.id);
+  const bitacora = bitacoraDe(solicitud.id);
   const puedeEditar = puede("editarEvaluacion") && !sinAsignar;
+  const puedeCambiarEstado = puede("cambiarEstado") && !sinAsignar;
 
   const cambiar = (campo) => (evento) => {
     setGuardado(false);
+    setErrores((actual) => ({ ...actual, [campo]: undefined }));
     setDatos((actual) => ({ ...actual, [campo]: evento.target.value }));
+  };
+
+  const cambiarEstado = (estado) => {
+    dispatch({
+      type: "cambiar-estado",
+      id: solicitud.id,
+      estado,
+      responsable: perfil.nombre,
+      fecha: hoyISO(),
+    });
+    setGuardado(false);
   };
 
   const enviar = (evento) => {
     evento.preventDefault();
-    const formulario = evento.currentTarget;
-    setIntento(true);
-
-    if (!formulario.checkValidity()) return;
+    const validados = validarEvaluacion(datos, { solicitud });
+    setErrores(validados);
+    if (hayErrores(validados)) return;
 
     const intencion =
       evento.nativeEvent.submitter?.value === "finalizar"
         ? "finalizar"
         : "guardar";
 
-    guardarEvaluacion(solicitud.id, datos);
+    dispatch({
+      type: "guardar-evaluacion",
+      solicitudId: solicitud.id,
+      datos,
+    });
 
     if (intencion === "finalizar") {
-      cambiarEstadoSolicitud(solicitud.id, "Finalizada");
+      dispatch({
+        type: "actualizar-solicitud",
+        id: solicitud.id,
+        datos: { fechaInforme: datos.fechaEvaluacion },
+      });
+      if (solicitud.estado !== "Finalizada") {
+        dispatch({
+          type: "cambiar-estado",
+          id: solicitud.id,
+          estado: "Finalizada",
+          responsable: perfil.nombre,
+          fecha: hoyISO(),
+        });
+      }
     } else if (solicitud.estado === "Pendiente") {
-      cambiarEstadoSolicitud(solicitud.id, "En proceso");
+      dispatch({
+        type: "cambiar-estado",
+        id: solicitud.id,
+        estado: "En proceso",
+        responsable: perfil.nombre,
+        fecha: hoyISO(),
+      });
     }
 
     setGuardado(true);
-    setIntento(false);
-  };
-
-  const cambiarEstado = (estado) => {
-    cambiarEstadoSolicitud(solicitud.id, estado);
-    setGuardado(false);
   };
 
   return (
@@ -100,7 +136,7 @@ export default function SolicitudDetallePage() {
         </ol>
       </nav>
 
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
         <div>
           <h1 className="h3 mb-1">{candidato?.nombre}</h1>
           <p className="text-secondary mb-0">
@@ -108,7 +144,7 @@ export default function SolicitudDetallePage() {
           </p>
         </div>
         <div>
-          <BadgeEstado estado={solicitud.estado} />
+          <EtiquetaEstado estado={solicitud.estado} />
         </div>
       </div>
 
@@ -126,10 +162,27 @@ export default function SolicitudDetallePage() {
               <h2 className="h6 text-uppercase text-secondary">Solicitud</h2>
               <dl className="row mb-0">
                 <dt className="col-sm-5">Fecha solicitud</dt>
-                <dd className="col-sm-7">{solicitud.fechaSolicitud}</dd>
+                <dd className="col-sm-7">{formatFecha(solicitud.fechaSolicitud)}</dd>
 
                 <dt className="col-sm-5">Responsable</dt>
                 <dd className="col-sm-7">{solicitud.responsable}</dd>
+
+                <dt className="col-sm-5">Prioridad</dt>
+                <dd className="col-sm-7">{solicitud.prioridad}</dd>
+
+                <dt className="col-sm-5">Entrevista</dt>
+                <dd className="col-sm-7">
+                  {solicitud.fechaEntrevista
+                    ? formatFecha(solicitud.fechaEntrevista)
+                    : "Sin agendar"}
+                </dd>
+
+                <dt className="col-sm-5">Informe</dt>
+                <dd className="col-sm-7">
+                  {solicitud.fechaInforme
+                    ? formatFecha(solicitud.fechaInforme)
+                    : "Pendiente"}
+                </dd>
 
                 <dt className="col-sm-5">Correo</dt>
                 <dd className="col-sm-7 text-break">{candidato?.correo}</dd>
@@ -138,7 +191,13 @@ export default function SolicitudDetallePage() {
                 <dd className="col-sm-7">{candidato?.telefono}</dd>
               </dl>
 
-              {puede("cambiarEstado") && !sinAsignar ? (
+              {solicitud.observaciones ? (
+                <p className="small text-secondary border-top pt-2 mb-0">
+                  {solicitud.observaciones}
+                </p>
+              ) : null}
+
+              {puedeCambiarEstado ? (
                 <div className="mt-3 pt-3 border-top">
                   <p className="small text-secondary mb-2">Cambiar estado</p>
                   <div className="d-flex flex-wrap gap-2">
@@ -159,6 +218,15 @@ export default function SolicitudDetallePage() {
                   </div>
                 </div>
               ) : null}
+            </div>
+          </div>
+
+          <div className="card border-0 shadow-sm mt-3">
+            <div className="card-body">
+              <h2 className="h6 text-uppercase text-secondary mb-3">
+                Bitácora de estados
+              </h2>
+              <BitacoraEstados registros={bitacora} />
             </div>
           </div>
         </div>
@@ -187,52 +255,53 @@ export default function SolicitudDetallePage() {
                 </div>
               ) : null}
 
-              <form
-                className={`row g-3 ${intento ? "was-validated" : ""}`}
-                noValidate
-                onSubmit={enviar}
-              >
+              <form className="row g-3" noValidate onSubmit={enviar}>
                 <div className="col-12 col-md-6">
-                  <label className="form-label" htmlFor="fechaEvaluacion">
+                  <label className="form-label" htmlFor="fechaEvaluacionInput">
                     Fecha de evaluación
                   </label>
                   <input
-                    id="fechaEvaluacion"
+                    id="fechaEvaluacionInput"
                     name="fechaEvaluacion"
                     type="date"
-                    className="form-control"
+                    className={`form-control ${
+                      errores.fechaEvaluacion ? "is-invalid" : ""
+                    }`}
                     value={datos.fechaEvaluacion}
                     onChange={cambiar("fechaEvaluacion")}
                     disabled={!puedeEditar}
                     required
                   />
-                  <div className="invalid-feedback">
-                    Indica la fecha de evaluación.
-                  </div>
+                  {errores.fechaEvaluacion ? (
+                    <div className="invalid-feedback">
+                      {errores.fechaEvaluacion}
+                    </div>
+                  ) : null}
                 </div>
 
-                <div className="col-12 col-md-6">
-                  <label className="form-label" htmlFor="resultado">
-                    Resultado
-                  </label>
-                  <select
-                    id="resultado"
-                    name="resultado"
-                    className="form-select"
-                    value={datos.resultado}
-                    onChange={cambiar("resultado")}
-                    disabled={!puedeEditar}
-                    required
-                  >
-                    <option value="">Seleccione un resultado</option>
-                    {RESULTADOS_EVALUACION.map((opcion) => (
-                      <option key={opcion}>{opcion}</option>
-                    ))}
-                  </select>
-                  <div className="invalid-feedback">
-                    Selecciona el resultado.
-                  </div>
-                </div>
+                <CampoSelect
+                  id="resultado"
+                  etiqueta="Resultado"
+                  valor={datos.resultado}
+                  alCambiar={cambiar("resultado")}
+                  opciones={RESULTADOS_EVALUACION.filter(
+                    (opcion) => opcion !== "Sin resultado"
+                  )}
+                  error={errores.resultado}
+                  deshabilitado={!puedeEditar}
+                  requerido
+                />
+
+                <CampoSelect
+                  id="categoria"
+                  etiqueta="Categoría del evaluador"
+                  valor={datos.categoria}
+                  alCambiar={cambiar("categoria")}
+                  opciones={CATEGORIAS_EVALUADOR}
+                  error={errores.categoria}
+                  deshabilitado={!puedeEditar}
+                  requerido
+                />
 
                 <div className="col-12">
                   <label className="form-label" htmlFor="observaciones">
@@ -241,7 +310,9 @@ export default function SolicitudDetallePage() {
                   <textarea
                     id="observaciones"
                     name="observaciones"
-                    className="form-control"
+                    className={`form-control ${
+                      errores.observaciones ? "is-invalid" : ""
+                    }`}
                     rows={5}
                     placeholder="Hallazgos, comportamientos observables, recomendaciones..."
                     value={datos.observaciones}
@@ -250,9 +321,15 @@ export default function SolicitudDetallePage() {
                     required
                     minLength={10}
                   />
-                  <div className="invalid-feedback">
-                    Describe la evaluación (mínimo 10 caracteres).
-                  </div>
+                  {errores.observaciones ? (
+                    <div className="invalid-feedback">
+                      {errores.observaciones}
+                    </div>
+                  ) : (
+                    <div className="form-text">
+                      Describe la evaluación con al menos 10 caracteres.
+                    </div>
+                  )}
                 </div>
 
                 {puedeEditar ? (

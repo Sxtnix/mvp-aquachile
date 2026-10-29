@@ -1,9 +1,11 @@
-export default function CandidatoCard({
+export default function FichaCandidato({
   nombre,
   cargo,
+  familia,
   estado,
   correo,
   telefono,
+  ubicacion,
   acciones,
 }) {
   return (
@@ -20,6 +22,18 @@ export default function CandidatoCard({
           </div>
 
           <p className="text-secondary mb-2">{cargo}</p>
+
+          {familia ? (
+            <p className="small mb-1">
+              <span className="text-secondary">Familia:</span> {familia}
+            </p>
+          ) : null}
+
+          {ubicacion ? (
+            <p className="small mb-1">
+              <span className="text-secondary">Ubicación:</span> {ubicacion}
+            </p>
+          ) : null}
 
           {correo ? (
             <p className="mb-1 small text-break">{correo}</p>

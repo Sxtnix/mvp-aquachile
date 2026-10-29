@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext.jsx";
-import { FAMILIAS_CARGO } from "../data/datosFicticios.js";
+import CampoSelect from "../components/CampoSelect.jsx";
+import CampoTexto from "../components/CampoTexto.jsx";
+import {
+  FAMILIAS_CARGO,
+  ORIGENES,
+  UBICACIONES,
+  UNIDADES,
+} from "../data/catalogos.js";
+import { hayErrores, validarCandidato } from "../utils/validaciones.js";
+import { hoyISO } from "../utils/fechas.js";
 
 const estadoInicial = {
   nombre: "",
@@ -9,49 +18,56 @@ const estadoInicial = {
   telefono: "",
   cargo: "",
   familia: "",
+  origen: "",
+  ubicacion: "",
+  unidad: "",
+  fechaPostulacion: hoyISO(),
+  requiereReferencia: false,
 };
 
 export default function CandidatoFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { obtenerCandidato, agregarCandidato, actualizarCandidato, puede } =
-    useApp();
+  const { obtenerCandidato, candidatos, dispatch, puede } = useApp();
 
   const candidato = id ? obtenerCandidato(id) : undefined;
   const esEdicion = Boolean(id);
   const soloLectura = esEdicion && !puede("editarCandidato");
-  const sinPermiso = esEdicion && !candidato;
+  const noEncontrado = esEdicion && !candidato;
 
   const [datos, setDatos] = useState(() => ({
     ...estadoInicial,
     ...(candidato || {}),
   }));
-  const [intento, setIntento] = useState(false);
+  const [errores, setErrores] = useState({});
 
-  const cambiar = (campo) => (evento) =>
-    setDatos((actual) => ({ ...actual, [campo]: evento.target.value }));
+  const cambiar = (campo) => (evento) => {
+    const valor =
+      evento.target.type === "checkbox"
+        ? evento.target.checked
+        : evento.target.value;
+    setDatos((actual) => ({ ...actual, [campo]: valor }));
+    setErrores((actual) => ({ ...actual, [campo]: undefined }));
+  };
 
   const enviar = (evento) => {
     evento.preventDefault();
-    const formulario = evento.currentTarget;
-    setIntento(true);
-
-    if (!formulario.checkValidity()) {
-      evento.stopPropagation();
-      return;
-    }
+    const validados = validarCandidato(datos, {
+      candidatos,
+      idActual: esEdicion ? id : null,
+    });
+    setErrores(validados);
+    if (hayErrores(validados)) return;
 
     if (esEdicion) {
-      actualizarCandidato(id, datos);
-      navigate("/candidatos");
-      return;
+      dispatch({ type: "actualizar-candidato", id, datos });
+    } else {
+      dispatch({ type: "agregar-candidato", datos });
     }
-
-    agregarCandidato(datos);
     navigate("/candidatos");
   };
 
-  if (sinPermiso) {
+  if (noEncontrado) {
     return (
       <div className="alert alert-warning">
         El candidato solicitado no existe.
@@ -77,125 +93,137 @@ export default function CandidatoFormPage() {
         </ol>
       </nav>
 
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
-        <div>
-          <h1 className="h3 mb-1">
-            {esEdicion ? datos.nombre : "Registrar candidato"}
-          </h1>
-          <p className="text-secondary mb-0">
-            {soloLectura
-              ? "Ficha en solo consulta (rol Evaluador)."
-              : "Los datos deben ser ficticios o simulados."}
-          </p>
-        </div>
+      <div className="mb-4">
+        <h1 className="h3 mb-1">
+          {esEdicion ? datos.nombre : "Registrar candidato"}
+        </h1>
+        <p className="text-secondary mb-0">
+          {soloLectura
+            ? "Ficha en solo consulta."
+            : "Los datos deben ser ficticios o anonimizados."}
+        </p>
       </div>
 
       {soloLectura ? (
         <div className="alert alert-info">
-          El rol Evaluador no puede crear ni editar candidatos.
+          Tu perfil no puede crear ni editar candidatos.
         </div>
       ) : null}
 
-      <form
-        className={`row g-3 ${intento ? "was-validated" : ""}`}
-        noValidate
-        onSubmit={enviar}
-      >
-        <div className="col-12 col-md-6">
-          <label className="form-label" htmlFor="nombre">
-            Nombre completo
-          </label>
-          <input
-            id="nombre"
-            name="nombre"
-            type="text"
-            className="form-control"
-            value={datos.nombre}
-            onChange={cambiar("nombre")}
-            disabled={soloLectura}
-            required
-            minLength={3}
-          />
-          <div className="invalid-feedback">
-            Ingresa un nombre de al menos 3 caracteres.
+      <form className="row g-3" noValidate onSubmit={enviar}>
+        <CampoTexto
+          id="nombre"
+          etiqueta="Nombre completo"
+          valor={datos.nombre}
+          alCambiar={cambiar("nombre")}
+          error={errores.nombre}
+          deshabilitado={soloLectura}
+          requerido
+        />
+
+        <CampoTexto
+          id="correo"
+          etiqueta="Correo electrónico"
+          tipo="email"
+          valor={datos.correo}
+          alCambiar={cambiar("correo")}
+          error={errores.correo}
+          deshabilitado={soloLectura}
+          requerido
+        />
+
+        <CampoTexto
+          id="telefono"
+          etiqueta="Teléfono"
+          tipo="tel"
+          valor={datos.telefono}
+          alCambiar={cambiar("telefono")}
+          error={errores.telefono}
+          deshabilitado={soloLectura}
+          requerido
+          placeholder="+56 9 1234 5678"
+        />
+
+        <CampoTexto
+          id="fechaPostulacion"
+          etiqueta="Fecha de postulación"
+          tipo="date"
+          valor={datos.fechaPostulacion}
+          alCambiar={cambiar("fechaPostulacion")}
+          error={errores.fechaPostulacion}
+          deshabilitado={soloLectura}
+          requerido
+        />
+
+        <CampoTexto
+          id="cargo"
+          etiqueta="Cargo al que postula"
+          valor={datos.cargo}
+          alCambiar={cambiar("cargo")}
+          error={errores.cargo}
+          deshabilitado={soloLectura}
+          requerido
+        />
+
+        <CampoSelect
+          id="familia"
+          etiqueta="Familia de cargo"
+          valor={datos.familia}
+          alCambiar={cambiar("familia")}
+          opciones={FAMILIAS_CARGO}
+          error={errores.familia}
+          deshabilitado={soloLectura}
+          requerido
+        />
+
+        <CampoSelect
+          id="origen"
+          etiqueta="Origen del candidato"
+          valor={datos.origen}
+          alCambiar={cambiar("origen")}
+          opciones={ORIGENES}
+          error={errores.origen}
+          deshabilitado={soloLectura}
+          requerido
+        />
+
+        <CampoSelect
+          id="ubicacion"
+          etiqueta="Ubicación del cargo"
+          valor={datos.ubicacion}
+          alCambiar={cambiar("ubicacion")}
+          opciones={UBICACIONES}
+          error={errores.ubicacion}
+          deshabilitado={soloLectura}
+          requerido
+        />
+
+        <CampoSelect
+          id="unidad"
+          etiqueta="Unidad contratante"
+          valor={datos.unidad}
+          alCambiar={cambiar("unidad")}
+          opciones={UNIDADES}
+          error={errores.unidad}
+          deshabilitado={soloLectura}
+          requerido
+        />
+
+        <div className="col-12">
+          <div className="form-check">
+            <input
+              id="requiereReferencia"
+              name="requiereReferencia"
+              type="checkbox"
+              className="form-check-input"
+              checked={Boolean(datos.requiereReferencia)}
+              onChange={cambiar("requiereReferencia")}
+              disabled={soloLectura}
+            />
+            <label className="form-check-label" htmlFor="requiereReferencia">
+              Requiere contacto de referencia
+            </label>
           </div>
-        </div>
-
-        <div className="col-12 col-md-6">
-          <label className="form-label" htmlFor="correo">
-            Correo electrónico
-          </label>
-          <input
-            id="correo"
-            name="correo"
-            type="email"
-            className="form-control"
-            value={datos.correo}
-            onChange={cambiar("correo")}
-            disabled={soloLectura}
-            required
-          />
-          <div className="invalid-feedback">Ingresa un correo válido.</div>
-        </div>
-
-        <div className="col-12 col-md-6">
-          <label className="form-label" htmlFor="telefono">
-            Teléfono
-          </label>
-          <input
-            id="telefono"
-            name="telefono"
-            type="tel"
-            className="form-control"
-            placeholder="+56 9 1234 5678"
-            value={datos.telefono}
-            onChange={cambiar("telefono")}
-            disabled={soloLectura}
-            required
-            pattern="[0-9+ ]{8,}"
-          />
-          <div className="invalid-feedback">
-            Usa solo números, espacios o el signo +.
-          </div>
-        </div>
-
-        <div className="col-12 col-md-6">
-          <label className="form-label" htmlFor="cargo">
-            Cargo al que postula
-          </label>
-          <input
-            id="cargo"
-            name="cargo"
-            type="text"
-            className="form-control"
-            value={datos.cargo}
-            onChange={cambiar("cargo")}
-            disabled={soloLectura}
-            required
-            minLength={3}
-          />
-          <div className="invalid-feedback">Indica el cargo al que postula.</div>
-        </div>
-
-        <div className="col-12 col-md-6">
-          <label className="form-label" htmlFor="familia">
-            Familia de cargo
-          </label>
-          <select
-            id="familia"
-            name="familia"
-            className="form-select"
-            value={datos.familia}
-            onChange={cambiar("familia")}
-            disabled={soloLectura}
-            required
-          >
-            <option value="">Seleccione una familia</option>
-            {FAMILIAS_CARGO.map((opcion) => (
-              <option key={opcion}>{opcion}</option>
-            ))}
-          </select>
-          <div className="invalid-feedback">Selecciona la familia de cargo.</div>
         </div>
 
         <div className="col-12 d-flex flex-column flex-sm-row gap-2">
