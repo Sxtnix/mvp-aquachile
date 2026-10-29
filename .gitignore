@@ -1,1 +1,5 @@
 .vscode/
+node_modules/
+dist/
+/agregar a aquachile/
+/ayuda-presentacion/
