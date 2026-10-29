@@ -1,0 +1,42 @@
+Ejecución: npm run test:coverage
+Fecha: 2026-10-28
+Proyecto: vcm-psicolaboral (MVP Evaluación Psicolaboral - AquaChile)
+
+Test Files  12 passed (12)
+     Tests  85 passed (85)
+
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   91.52 |     81.1 |   94.36 |   92.03 |
+ src/components    |    90.9 |    85.54 |   88.88 |    92.5 |
+  BandejaSolicitudes|     100 |       85 |     100 |     100 | 40,161-172
+  BitacoraEstados   |      75 |    83.33 |     100 |      75 | 6
+  CampoSelect.jsx   |     100 |    93.33 |     100 |     100 | 16
+  CampoTexto.jsx    |     100 |    86.66 |     100 |     100 | 35
+  EtiquetaEstado    |     100 |       50 |     100 |     100 | 9
+  FichaCandidato    |     100 |    83.33 |     100 |     100 | 26-32
+  Layout.jsx        |   78.57 |    83.33 |   66.66 |   84.61 | 35,50
+  TarjetaKpi.jsx    |     100 |       75 |     100 |     100 | 10
+ src/context        |    95.45 |    87.09 |     100 |      95 |
+  AppContext.jsx    |   96.15 |    83.33 |     100 |   95.65 | 67
+  motorEstado.js    |      95 |       88 |     100 |   94.59 | 152,168
+ src/pages          |   85.33 |    62.29 |   89.79 |   85.71 |
+  CandidatoFormPage |   83.87 |       70 |     100 |   80.76 | 62-67,71
+  CandidatosPage    |      92 |    56.25 |    92.3 |   95.45 | 131
+  DashboardPage     |     100 |       50 |     100 |     100 | 22-62
+  DetallePage       |   83.33 |    62.96 |      75 |   84.09 | ...13-114,213,356
+  SolicitudFormPage |   78.12 |    58.33 |    90.9 |   77.77 | 41-61,65
+  SolicitudesPage   |     100 |       50 |     100 |     100 | 19
+ src/utils          |    95.3 |    91.92 |     100 |   95.71 |
+  fechas.js         |   95.83 |    94.44 |     100 |     100 | 19
+  selectores.js     |     100 |    92.59 |     100 |     100 | 21,41,73,77
+  validaciones.js   |   92.85 |    91.01 |     100 |   92.85 | ...07,109,123,125
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 91.52% ( 389/425 )
+Branches     : 81.1% ( 322/397 )
+Functions    : 94.36% ( 134/142 )
+Lines        : 92.03% ( 358/389 )
+================================================================================
