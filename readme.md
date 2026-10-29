@@ -128,7 +128,7 @@ El perfil se simula con un selector en la barra superior (no hay autenticación 
 - React con componentes reutilizables, props, arreglos y `.map()`.
 - `useState`, eventos, búsqueda, filtros, renderizado condicional.
 - Formularios con validación de campos y navegación con React Router.
-- Responsive con Bootstrap 5 (verificado en 375, 768 y 1200 px).
+- Responsive con Bootstrap 5 (verificado en móvil, tablet y escritorio).
 - Tres perfiles con permisos diferenciados.
 - Bitácora de estados (trazabilidad).
 - Indicadores y filtros por estado, familia, responsable y rango de fechas.

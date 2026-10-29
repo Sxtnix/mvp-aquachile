@@ -89,7 +89,7 @@ Campos requeridos por el anexo (todos implementados) más campos complementarios
 | Requisito | Estado | Detalle |
 |-----------|--------|---------|
 | Usabilidad | ✅ | Navegación con barra superior, migas de pan y estados vacíos con mensajes claros. |
-| Responsividad | ✅ | Maquetación Bootstrap 5 verificada en 375, 768 y 1200 px. |
+| Responsividad | ✅ | Maquetación Bootstrap 5 verificada en móvil, tablet y escritorio. |
 | Validaciones | ✅ | Formularios con validación de campos, formato y reglas de negocio (correo único, fechas coherentes, solicitud activa única). |
 | Trazabilidad | ✅ | Bitácora de cambios de estado por solicitud (quién, cuándo, anterior → nuevo). |
 | Seguridad básica / privacidad | ⚠️ Parcial | Perfiles con permisos diferenciados; sin autenticación real en esta etapa. |
