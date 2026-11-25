@@ -6,16 +6,16 @@ import { renderConContexto } from "../test/helpers.jsx";
 describe("EtiquetaEstado", () => {
   it("muestra el estado con su estilo", () => {
     renderConContexto(<EtiquetaEstado estado="Pendiente" />);
-    expect(screen.getByText("Pendiente")).toHaveClass("text-bg-secondary");
+    expect(screen.getByText("Pendiente")).toHaveClass("badge-vc estado-pendiente");
   });
 
-  it("aplica estilo de advertencia para En proceso", () => {
+  it("applica estilo de advertencia para En proceso", () => {
     renderConContexto(<EtiquetaEstado estado="En proceso" />);
-    expect(screen.getByText("En proceso")).toHaveClass("text-bg-warning");
+    expect(screen.getByText("En proceso")).toHaveClass("badge-vc estado-en-proceso");
   });
 
-  it("aplica estilo de éxito para Finalizada", () => {
+  it("applica estilo de éxito para Finalizada", () => {
     renderConContexto(<EtiquetaEstado estado="Finalizada" />);
-    expect(screen.getByText("Finalizada")).toHaveClass("text-bg-success");
+    expect(screen.getByText("Finalizada")).toHaveClass("badge-vc estado-finalizada");
   });
 });

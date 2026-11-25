@@ -2,6 +2,7 @@ import {
   bitacoraInicial,
   candidatosIniciales,
   evaluacionesIniciales,
+  ofertasIniciales,
   solicitudesIniciales,
 } from "../data/datosIniciales.js";
 import { hoyISO } from "../utils/fechas.js";
@@ -14,6 +15,7 @@ export const PERMISOS = {
     crearSolicitud: true,
     editarEvaluacion: false,
     cambiarEstado: false,
+    gestionarOfertas: true,
   },
   evaluador: {
     crearCandidato: false,
@@ -22,6 +24,7 @@ export const PERMISOS = {
     crearSolicitud: false,
     editarEvaluacion: true,
     cambiarEstado: true,
+    gestionarOfertas: false,
   },
   jefatura: {
     crearCandidato: false,
@@ -30,6 +33,7 @@ export const PERMISOS = {
     crearSolicitud: false,
     editarEvaluacion: false,
     cambiarEstado: false,
+    gestionarOfertas: false,
   },
 };
 
@@ -42,6 +46,9 @@ export const estadoInicial = {
   solicitudes: solicitudesIniciales,
   evaluaciones: evaluacionesIniciales,
   bitacora: bitacoraInicial,
+  ofertas: ofertasIniciales,
+  postulaciones: [],
+  iaEstado: null,
   perfilActivo: "analista",
 };
 
@@ -159,6 +166,159 @@ export function reducer(estado, accion) {
             solicitudId: idSolicitud,
           },
         ],
+      };
+    }
+    case "crear-oferta": {
+      const nueva = {
+        ...accion.datos,
+        id: siguienteId(estado.ofertas),
+        estado: accion.datos.estado || "Publicada",
+        fechaPublicacion: accion.datos.fechaPublicacion || hoyISO(),
+      };
+      return { ...estado, ofertas: [...estado.ofertas, nueva] };
+    }
+    case "actualizar-oferta": {
+      return {
+        ...estado,
+        ofertas: estado.ofertas.map((oferta) =>
+          oferta.id === Number(accion.id)
+            ? { ...oferta, ...accion.datos }
+            : oferta
+        ),
+      };
+    }
+    case "cambiar-estado-oferta": {
+      return {
+        ...estado,
+        ofertas: estado.ofertas.map((oferta) =>
+          oferta.id === Number(accion.id)
+            ? { ...oferta, estado: accion.estado }
+            : oferta
+        ),
+      };
+    }
+    case "postular-oferta": {
+      const oferta = estado.ofertas.find(
+        (item) => item.id === Number(accion.ofertaId)
+      );
+      if (!oferta || oferta.estado !== "Publicada") return estado;
+
+      const correo = (accion.datos.correo || "").trim().toLowerCase();
+      const existente = estado.candidatos.find(
+        (candidato) => candidato.correo.toLowerCase() === correo
+      );
+
+      if (
+        existente &&
+        estado.solicitudes.some(
+          (solicitud) =>
+            solicitud.ofertaId === oferta.id &&
+            solicitud.candidatoId === existente.id
+        )
+      ) {
+        return estado;
+      }
+
+      const candidato =
+        existente ||
+        ({
+          id: siguienteId(estado.candidatos),
+          nombre: accion.datos.nombre,
+          correo: accion.datos.correo,
+          telefono: accion.datos.telefono,
+          cargo: oferta.cargo,
+          familia: oferta.familia,
+          origen: "Externo",
+          ubicacion: oferta.ubicacion,
+          unidad: oferta.unidad || oferta.departamento || "",
+          fechaPostulacion: hoyISO(),
+          requiereReferencia: false,
+          canal: "Portal público",
+          ofertaOrigenId: oferta.id,
+        });
+
+      const candidatos = existente
+        ? estado.candidatos
+        : [...estado.candidatos, candidato];
+
+      const idSolicitud = accion.solicitudId || siguienteId(estado.solicitudes);
+      const nuevaSolicitud = {
+        id: idSolicitud,
+        candidatoId: candidato.id,
+        cargo: oferta.cargo,
+        familia: oferta.familia,
+        fechaSolicitud: hoyISO(),
+        estado: "Pendiente",
+        responsable: oferta.responsable,
+        prioridad: "Media",
+        observaciones: `Postulación recibida desde el portal público para la oferta #${oferta.id}: ${oferta.cargo}.`,
+        fechaEntrevista: "",
+        fechaInforme: "",
+        ofertaId: oferta.id,
+        canal: "Portal público",
+        curriculum: accion.curriculum || null,
+      };
+
+      const registro = {
+        id: siguienteId(estado.bitacora),
+        solicitudId: nuevaSolicitud.id,
+        fecha: nuevaSolicitud.fechaSolicitud,
+        estadoAnterior: null,
+        estadoNuevo: "Pendiente",
+        responsable: "Portal público",
+      };
+
+      return {
+        ...estado,
+        candidatos,
+        solicitudes: [...estado.solicitudes, nuevaSolicitud],
+        bitacora: [...estado.bitacora, registro],
+      };
+    }
+    case "eliminar-oferta": {
+      const id = Number(accion.id);
+      return {
+        ...estado,
+        ofertas: estado.ofertas.filter((oferta) => oferta.id !== id),
+      };
+    }
+    case "guardar-analisis": {
+      const id = Number(accion.solicitudId);
+      return {
+        ...estado,
+        solicitudes: estado.solicitudes.map((solicitud) =>
+          solicitud.id === id
+            ? { ...solicitud, analisis: accion.analisis }
+            : solicitud
+        ),
+      };
+    }
+    case "hidratar": {
+      const datos = accion.datos || {};
+      return {
+        ...estado,
+        ...(datos.candidatos ? { candidatos: datos.candidatos } : {}),
+        ...(datos.solicitudes ? { solicitudes: datos.solicitudes } : {}),
+        ...(datos.evaluaciones ? { evaluaciones: datos.evaluaciones } : {}),
+        ...(datos.bitacora ? { bitacora: datos.bitacora } : {}),
+        ...(datos.ofertas ? { ofertas: datos.ofertas } : {}),
+        ...(datos.postulaciones
+          ? { postulaciones: datos.postulaciones }
+          : {}),
+        ...(datos.iaEstado !== undefined ? { iaEstado: datos.iaEstado } : {}),
+        ...(datos.perfilActivo ? { perfilActivo: datos.perfilActivo } : {}),
+      };
+    }
+    case "cerrar-sesion": {
+      return {
+        ...estadoInicial,
+        candidatos: [],
+        solicitudes: [],
+        evaluaciones: [],
+        bitacora: [],
+        ofertas: [],
+        postulaciones: [],
+        iaEstado: null,
       };
     }
     case "cambiar-perfil": {

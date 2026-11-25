@@ -1,4 +1,4 @@
-import { diasEntre } from "./fechas.js";
+import { diasEntre, hoyISO } from "./fechas.js";
 import { ESTADOS_SOLICITUD } from "../data/catalogos.js";
 
 export function contarPorEstado(solicitudes, estado) {
@@ -44,6 +44,62 @@ export function distribucionPorFamilia(candidatos) {
   return [...mapa.entries()]
     .map(([familia, cantidad]) => ({ familia, cantidad }))
     .sort((a, b) => b.cantidad - a.cantidad);
+}
+
+export function ofertaVigente(oferta, hoy = hoyISO()) {
+  if (!oferta || oferta.estado !== "Publicada") return false;
+  if (!oferta.fechaCierre) return true;
+  return oferta.fechaCierre >= hoy;
+}
+
+export function ofertasPublicadas(ofertas = []) {
+  return ofertas.filter((oferta) => ofertaVigente(oferta));
+}
+
+export function ofertasFiltradas(
+  ofertas = [],
+  { texto = "", familia = "" } = {}
+) {
+  const consulta = texto.trim().toLowerCase();
+  return ofertasPublicadas(ofertas).filter((oferta) => {
+    const coincideTexto =
+      !consulta ||
+      `${oferta.cargo} ${oferta.ubicacion} ${
+        oferta.departamento || oferta.unidad || ""
+      }`
+        .toLowerCase()
+        .includes(consulta);
+    const coincideFamilia = !familia || oferta.familia === familia;
+    return coincideTexto && coincideFamilia;
+  });
+}
+
+export function postulacionesDeOferta(solicitudes = [], ofertaId) {
+  return solicitudes.filter(
+    (solicitud) => solicitud.ofertaId === Number(ofertaId)
+  );
+}
+
+export function vacantesDisponibles(ofertas = []) {
+  return ofertasPublicadas(ofertas).reduce(
+    (total, oferta) => total + (Number(oferta.vacantes) || 0),
+    0
+  );
+}
+
+export function resumenPortal(ofertas = [], solicitudes = []) {
+  const publicadas = ofertasPublicadas(ofertas);
+  const ids = new Set(publicadas.map((oferta) => oferta.id));
+  return {
+    ofertas: publicadas.length,
+    vacantes: publicadas.reduce(
+      (total, oferta) => total + (Number(oferta.vacantes) || 0),
+      0
+    ),
+    postulaciones: solicitudes.filter((solicitud) =>
+      ids.has(solicitud.ofertaId)
+    ).length,
+  };
 }
 
 export function candidatosFiltrados(candidatos, { texto = "", familia = "", origen = "" } = {}) {

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext.jsx";
 import AvisoSimulacion from "../components/AvisoSimulacion.jsx";
+import BarraFiltros from "../components/BarraFiltros.jsx";
+import BuscadorExpandible from "../components/BuscadorExpandible.jsx";
 import DialogoConfirmar from "../components/DialogoConfirmar.jsx";
 import FichaCandidato from "../components/FichaCandidato.jsx";
 import { FAMILIAS_CARGO, ORIGENES } from "../data/catalogos.js";
@@ -21,6 +23,7 @@ export default function CandidatosPage() {
     setFiltros((actual) => ({ ...actual, [campo]: evento.target.value }));
 
   const filtrados = candidatosFiltrados(candidatos, filtros);
+  const hayFiltros = Object.values(filtros).some(Boolean);
 
   const estadoDe = (idCandidato) => {
     const solicitud = solicitudes.find(
@@ -37,42 +40,60 @@ export default function CandidatosPage() {
 
   return (
     <>
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
-        <div>
-          <h1 className="h3 mb-1">Candidatos</h1>
-          <p className="text-secondary mb-0">
-            {filtrados.length} de {candidatos.length} registros
-          </p>
-        </div>
+      <header className="encabezado-pagina mb-3">
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+          <div>
+            <span className="eyebrow">
+              <i className="bi bi-people" aria-hidden="true" />
+              Registro de postulantes
+            </span>
+            <h1 className="h3 mb-1">Candidatos</h1>
+            <p className="text-secondary mb-0">
+              {filtrados.length} de {candidatos.length} registros
+            </p>
+          </div>
 
-        {puede("crearCandidato") ? (
-          <Link to="/candidatos/nuevo" className="btn btn-marca">
-            Registrar candidato
-          </Link>
-        ) : (
-          <span className="badge text-bg-secondary">
-            {puede("editarCandidato") ? "Solo consulta" : "Sin permisos de edición"}
-          </span>
-        )}
-      </div>
+          {puede("crearCandidato") ? (
+            <Link to="/candidatos/nuevo" className="btn btn-marca">
+              <i className="bi bi-person-plus me-1" aria-hidden="true" />
+              Registrar candidato
+            </Link>
+          ) : (
+            <span className="badge-vc estado-sin-solicitud align-self-md-center">
+              <i className="bi bi-lock" aria-hidden="true" />
+              {puede("editarCandidato")
+                ? "Solo consulta"
+                : "Sin permisos de edición"}
+            </span>
+          )}
+        </div>
+      </header>
 
       <AvisoSimulacion />
 
-      <div className="row g-2 mb-4">
-        <div className="col-12 col-md-5">
-          <label className="visually-hidden" htmlFor="cand-texto">
-            Buscar candidato
-          </label>
-          <input
-            id="cand-texto"
-            className="form-control"
-            placeholder="Buscar por nombre, cargo o correo..."
-            value={filtros.texto}
-            onChange={cambiar("texto")}
-          />
-        </div>
+      <BarraFiltros
+        resumen={
+          <>
+            <i className="bi bi-people me-1" aria-hidden="true" />
+            {filtrados.length} de {candidatos.length} candidatos
+          </>
+        }
+        hayFiltros={hayFiltros}
+        alLimpiar={() => setFiltros({ texto: "", familia: "", origen: "" })}
+        etiqueta="Filtros de candidatos"
+      >
+        <BuscadorExpandible
+          id="cand-texto"
+          etiqueta="Buscar candidato"
+          placeholder="Buscar por nombre, cargo o correo…"
+          valor={filtros.texto}
+          alCambiar={cambiar("texto")}
+          alLimpiar={() =>
+            setFiltros((actual) => ({ ...actual, texto: "" }))
+          }
+        />
 
-        <div className="col-6 col-md-3">
+        <div className="barra-filtros-campo">
           <label className="visually-hidden" htmlFor="cand-familia">
             Familia de cargo
           </label>
@@ -89,7 +110,7 @@ export default function CandidatosPage() {
           </select>
         </div>
 
-        <div className="col-6 col-md-4">
+        <div className="barra-filtros-campo">
           <label className="visually-hidden" htmlFor="cand-origen">
             Origen
           </label>
@@ -105,10 +126,11 @@ export default function CandidatosPage() {
             ))}
           </select>
         </div>
-      </div>
+      </BarraFiltros>
 
       {filtrados.length === 0 ? (
-        <div className="alert alert-secondary">
+        <div className="alert alert-secondary d-flex align-items-center gap-2">
+          <i className="bi bi-search" aria-hidden="true" />
           No hay candidatos que coincidan con la búsqueda.
         </div>
       ) : (
@@ -127,9 +149,15 @@ export default function CandidatosPage() {
                 <>
                   <button
                     type="button"
-                    className="btn btn-sm btn-outline-secondary"
+                    className="btn btn-sm btn-outline-marca"
                     onClick={() => navigate(`/candidatos/${candidato.id}`)}
                   >
+                    <i
+                      className={`bi ${
+                        puede("editarCandidato") ? "bi-pencil" : "bi-eye"
+                      } me-1`}
+                      aria-hidden="true"
+                    />
                     {puede("editarCandidato") ? "Editar" : "Ver ficha"}
                   </button>
 
@@ -139,6 +167,7 @@ export default function CandidatosPage() {
                       className="btn btn-sm btn-outline-danger"
                       onClick={() => setPorEliminar(candidato)}
                     >
+                      <i className="bi bi-trash me-1" aria-hidden="true" />
                       Eliminar
                     </button>
                   ) : null}
@@ -153,9 +182,15 @@ export default function CandidatosPage() {
         abierto={Boolean(porEliminar)}
         titulo="Eliminar candidato"
         mensaje={
-          porEliminar
-            ? `¿Eliminar a ${porEliminar.nombre}? También se eliminarán sus solicitudes y evaluaciones asociadas. Esta acción no se puede deshacer.`
-            : ""
+          porEliminar ? (
+            <>
+              ¿Eliminar a <strong>{porEliminar.nombre}</strong>? También se
+              eliminarán sus solicitudes y evaluaciones asociadas. Esta acción
+              no se puede deshacer.
+            </>
+          ) : (
+            ""
+          )
         }
         etiquetaConfirmar="Eliminar"
         alConfirmar={confirmarEliminacion}

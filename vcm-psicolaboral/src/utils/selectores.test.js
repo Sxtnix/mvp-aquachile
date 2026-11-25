@@ -3,10 +3,16 @@ import {
   candidatosFiltrados,
   contarPorEstado,
   distribucionPorFamilia,
+  ofertaVigente,
+  ofertasFiltradas,
+  ofertasPublicadas,
+  postulacionesDeOferta,
   promedioDiasInforme,
   resumenEstados,
+  resumenPortal,
   solicitudesFiltradas,
   tasaRecomendacion,
+  vacantesDisponibles,
 } from "./selectores.js";
 
 const candidatos = [
@@ -108,5 +114,40 @@ describe("solicitudesFiltradas", () => {
   it("filtra por texto usando el nombre del candidato", () => {
     const resultado = solicitudesFiltradas(solicitudes, { texto: "luis" }, obtenerCandidato);
     expect(resultado).toHaveLength(1);
+  });
+});
+
+describe("ofertas y portal público", () => {
+  const ofertas = [
+    { id: 1, cargo: "Técnico", familia: "Técnico A", ubicacion: "Planta", unidad: "Mantenimiento", vacantes: 2, estado: "Publicada", fechaCierre: "2099-01-01" },
+    { id: 2, cargo: "Analista", familia: "Profesional A", ubicacion: "Oficina", unidad: "Calidad", vacantes: 1, estado: "Publicada", fechaCierre: "2020-01-01" },
+    { id: 3, cargo: "Operario", familia: "Operario Calificado", ubicacion: "Planta", unidad: "Logística", vacantes: 3, estado: "Cerrada", fechaCierre: "2099-01-01" },
+  ];
+
+  it("determina si una oferta está vigente por estado y fecha", () => {
+    expect(ofertaVigente(ofertas[0], "2026-11-14")).toBe(true);
+    expect(ofertaVigente(ofertas[1], "2026-11-14")).toBe(false);
+    expect(ofertaVigente(ofertas[2], "2026-11-14")).toBe(false);
+  });
+
+  it("lista y filtra solo ofertas publicadas y vigentes", () => {
+    expect(ofertasPublicadas(ofertas)).toHaveLength(1);
+    expect(ofertasFiltradas(ofertas, { texto: "técnico" })).toHaveLength(1);
+    expect(ofertasFiltradas(ofertas, { familia: "Profesional A" })).toHaveLength(0);
+  });
+
+  it("cuenta vacantes, postulaciones y resume el portal", () => {
+    expect(vacantesDisponibles(ofertas)).toBe(2);
+    const solicitudes = [
+      { id: 1, ofertaId: 1, candidatoId: 1 },
+      { id: 2, ofertaId: 2, candidatoId: 2 },
+      { id: 3, ofertaId: 1, candidatoId: 3 },
+    ];
+    expect(postulacionesDeOferta(solicitudes, 1)).toHaveLength(2);
+    expect(resumenPortal(ofertas, solicitudes)).toEqual({
+      ofertas: 1,
+      vacantes: 2,
+      postulaciones: 2,
+    });
   });
 });

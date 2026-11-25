@@ -1,0 +1,756 @@
+openapi: 3.0.3
+info:
+  title: AquaChile — API de Reclutamiento y Evaluación Psicolaboral
+  version: 1.0.0
+  description: |
+    API REST del MVP de reclutamiento de AquaChile. Centraliza candidatos,
+    ofertas laborales, postulaciones, currículums, solicitudes, evaluaciones
+    psicolaborales y análisis de currículum con IA (Groq) como apoyo.
+
+    **Seguridad:** los endpoints internos requieren `Authorization: Bearer <accessToken>`.
+    El refresh token viaja en una cookie HttpOnly y se renueva en `POST /api/auth/refresh`.
+
+    **IA:** el análisis con Groq es orientativo y queda pendiente de revisión humana.
+  contact:
+    name: Equipo AquaChile DSY1104
+servers:
+  - url: http://localhost:3001/api
+    description: Entorno local
+tags:
+  - name: Público
+    description: Portal de empleo sin autenticación
+  - name: Autenticación
+    description: Login, refresh, logout y sesión
+  - name: Candidatos
+  - name: Ofertas
+  - name: Solicitudes
+  - name: Postulaciones
+  - name: IA
+  - name: Dashboard
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Datos inválidos.
+        detalles:
+          type: array
+          items:
+            type: object
+            properties:
+              campo:
+                type: string
+              mensaje:
+                type: string
+    Usuario:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        nombre: { type: string, example: Camila Reyes }
+        email: { type: string, example: analista@aquachile.cl }
+        rol:
+          type: string
+          enum: [ANALISTA, EVALUADOR, JEFATURA]
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, example: analista@aquachile.cl }
+        password: { type: string, example: AquaChile2026! }
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT de acceso con vigencia de 15 minutos.
+        usuario:
+          $ref: '#/components/schemas/Usuario'
+    Candidato:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        nombre: { type: string, example: Valentina Rojas }
+        correo: { type: string, example: valentina.rojas@correo.cl }
+        telefono: { type: string, example: '+56 9 8123 4455' }
+        cargo: { type: string, example: Analista de Calidad }
+        familia: { type: string, example: Profesional A }
+        origen: { type: string, enum: [Externo, Interno] }
+        ubicacion: { type: string, example: Oficina Central }
+        departamento: { type: string, example: Calidad }
+        requiereReferencia: { type: boolean, example: true }
+        fechaPostulacion: { type: string, example: '2026-09-10' }
+    CandidatoInput:
+      type: object
+      required: [nombre, correo, telefono, cargo, familia, origen, ubicacion, departamento, fechaPostulacion]
+      properties:
+        nombre: { type: string, example: Valentina Rojas }
+        correo: { type: string, example: valentina.rojas@correo.cl }
+        telefono: { type: string, example: '+56 9 8123 4455' }
+        cargo: { type: string, example: Analista de Calidad }
+        familia: { type: string, example: Profesional A }
+        origen: { type: string, enum: [Externo, Interno] }
+        ubicacion: { type: string, example: Oficina Central }
+        departamento: { type: string, example: Calidad }
+        requiereReferencia: { type: boolean, example: true }
+        fechaPostulacion: { type: string, example: '2026-09-10' }
+    Oferta:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        cargo: { type: string, example: Técnico de Mantenimiento }
+        familia: { type: string, example: Técnico A }
+        departamento: { type: string, example: Mantenimiento }
+        ubicacion: { type: string, example: Planta Magallanes }
+        modalidad: { type: string, enum: [Presencial, Híbrida, Remota] }
+        descripcion: { type: string }
+        funciones: { type: string }
+        requisitos: { type: string }
+        beneficios: { type: string }
+        sueldo: { type: string, example: '$850.000 - $1.050.000 líquido' }
+        vacantes: { type: integer, example: 2 }
+        fechaPublicacion: { type: string, nullable: true, example: '2026-11-01' }
+        fechaCierre: { type: string, nullable: true, example: '2026-12-15' }
+        estado: { type: string, enum: [Borrador, Publicada, Cerrada] }
+        responsable: { type: string, example: Valeria Ospina }
+    OfertaInput:
+      type: object
+      required: [cargo, familia, departamento, ubicacion, modalidad, descripcion, funciones, requisitos, vacantes]
+      properties:
+        cargo: { type: string, example: Analista de Calidad }
+        familia: { type: string, example: Profesional A }
+        departamento: { type: string, example: Calidad }
+        ubicacion: { type: string, example: Oficina Central }
+        modalidad: { type: string, enum: [Presencial, Híbrida, Remota] }
+        descripcion: { type: string, example: Apoyo al sistema de gestión de calidad. }
+        funciones: { type: string, example: Coordinar auditorías internas. }
+        requisitos: { type: string, example: Ingeniería o carrera afín. }
+        beneficios: { type: string, example: Seguro complementario. }
+        sueldo: { type: string, example: '$1.200.000 bruto' }
+        vacantes: { type: integer, example: 1 }
+        fechaPublicacion: { type: string, example: '2026-11-03' }
+        fechaCierre: { type: string, example: '2026-12-05' }
+        estado: { type: string, enum: [Borrador, Publicada, Cerrada] }
+        responsable: { type: string, example: Camila Reyes }
+    Solicitud:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        candidatoId: { type: integer, example: 1 }
+        cargo: { type: string, example: Analista de Calidad }
+        familia: { type: string, example: Profesional A }
+        fechaSolicitud: { type: string, example: '2026-09-14' }
+        estado: { type: string, enum: [Pendiente, En proceso, Finalizada] }
+        responsable: { type: string, example: Valeria Ospina }
+        prioridad: { type: string, enum: [Alta, Media, Baja] }
+        observaciones: { type: string }
+        fechaEntrevista: { type: string, example: '2026-09-20' }
+        fechaInforme: { type: string, example: '2026-09-24' }
+    SolicitudInput:
+      type: object
+      required: [candidatoId, prioridad, fechaSolicitud]
+      properties:
+        candidatoId: { type: integer, example: 1 }
+        responsable: { type: string, example: Valeria Ospina }
+        prioridad: { type: string, enum: [Alta, Media, Baja] }
+        observaciones: { type: string }
+        fechaEntrevista: { type: string, example: '2026-09-20' }
+        fechaSolicitud: { type: string, example: '2026-09-14' }
+    EvaluacionInput:
+      type: object
+      required: [fechaEvaluacion, resultado, categoria, observaciones]
+      properties:
+        fechaEvaluacion: { type: string, example: '2026-09-24' }
+        resultado:
+          type: string
+          enum: [Apto, Apto con observaciones, No apto, Sin resultado]
+        categoria:
+          type: string
+          enum: [Recomendado, Recomendado con observaciones, No recomendado]
+        observaciones: { type: string, example: Buen análisis crítico y comunicación asertiva. }
+        finalizar: { type: boolean, default: true }
+    AnalisisIA:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        solicitudId: { type: integer, example: 1 }
+        puntaje: { type: integer, example: 82 }
+        resumen: { type: string }
+        formacion: { type: string }
+        experiencia: { type: string }
+        habilidades:
+          type: array
+          items: { type: string }
+        requisitos:
+          type: array
+          items:
+            type: object
+            properties:
+              requisito: { type: string }
+              estado: { type: string, enum: [cumple, parcial, no] }
+              detalle: { type: string }
+        preguntas:
+          type: array
+          items:
+            type: object
+            properties:
+              pregunta: { type: string }
+              objetivo: { type: string }
+        faltantes:
+          type: array
+          items: { type: string }
+        limitaciones: { type: string }
+        modelo: { type: string, example: openai/gpt-oss-120b }
+        revisadoPor: { type: string, nullable: true }
+        revisadoEn: { type: string, nullable: true }
+        pendienteRevision: { type: boolean, example: true }
+  responses:
+    NoAutorizado:
+      description: Token ausente, inválido o expirado.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    SinPermiso:
+      description: El rol del usuario no permite la acción.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NoEncontrado:
+      description: El recurso no existe.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Invalido:
+      description: Datos inválidos.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+paths:
+  /health:
+    get:
+      tags: [Público]
+      summary: Estado del servicio
+      responses:
+        '200':
+          description: Servicio operativo
+  /auth/login:
+    post:
+      tags: [Autenticación]
+      summary: Inicia sesión y emite access + refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Sesión iniciada. El refresh token se envía en cookie HttpOnly.
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '401':
+          description: Credenciales incorrectas.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /auth/refresh:
+    post:
+      tags: [Autenticación]
+      summary: Renueva el access token usando la cookie de refresh
+      responses:
+        '200':
+          description: Nuevo access token y refresh rotado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+  /auth/logout:
+    post:
+      tags: [Autenticación]
+      summary: Revoca el refresh token y limpia la cookie
+      responses:
+        '200':
+          description: Sesión cerrada.
+  /auth/me:
+    get:
+      tags: [Autenticación]
+      summary: Usuario autenticado actual
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Datos del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuario: { $ref: '#/components/schemas/Usuario' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+
+  /publico/ofertas:
+    get:
+      tags: [Público]
+      summary: Lista las ofertas publicadas
+      parameters:
+        - { in: query, name: q, schema: { type: string }, description: Busca por cargo, ubicación o departamento }
+        - { in: query, name: familia, schema: { type: string } }
+        - { in: query, name: modalidad, schema: { type: string, enum: [Presencial, Híbrida, Remota] } }
+        - { in: query, name: departamento, schema: { type: string } }
+      responses:
+        '200':
+          description: Ofertas publicadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  datos:
+                    type: array
+                    items: { $ref: '#/components/schemas/Oferta' }
+                  total: { type: integer }
+  /publico/ofertas/{id}:
+    get:
+      tags: [Público]
+      summary: Detalle de una oferta publicada
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: Oferta encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  datos: { $ref: '#/components/schemas/Oferta' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+  /publico/postulaciones:
+    post:
+      tags: [Público]
+      summary: Registra una postulación con currículum (multipart/form-data)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [ofertaId, nombre, correo, telefono, consentimiento, curriculum]
+              properties:
+                ofertaId: { type: integer, example: 1 }
+                nombre: { type: string, example: Valentina Rojas }
+                correo: { type: string, example: valentina.rojas@correo.cl }
+                telefono: { type: string, example: '+56 9 8123 4455' }
+                consentimiento: { type: boolean, example: true }
+                curriculum:
+                  type: string
+                  format: binary
+                  description: PDF, DOC o DOCX de hasta 5 MB.
+      responses:
+        '201':
+          description: Postulación registrada con folio, carpeta CV y solicitud asociada.
+        '400': { $ref: '#/components/responses/Invalido' }
+        '409':
+          description: Oferta cerrada o postulación duplicada.
+        '422':
+          description: Archivo inválido o contenido no coincidente.
+  /publico/postulaciones/{folio}:
+    get:
+      tags: [Público]
+      summary: Consulta el estado de una postulación por folio y correo
+      parameters:
+        - { in: path, name: folio, required: true, schema: { type: string }, example: AQ-2026-A1B2C3 }
+        - { in: query, name: correo, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Estado de la postulación
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+
+  /candidatos:
+    get:
+      tags: [Candidatos]
+      summary: Lista candidatos
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: q, schema: { type: string } }
+        - { in: query, name: familia, schema: { type: string } }
+        - { in: query, name: origen, schema: { type: string, enum: [Externo, Interno] } }
+      responses:
+        '200':
+          description: Listado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  datos:
+                    type: array
+                    items: { $ref: '#/components/schemas/Candidato' }
+                  total: { type: integer }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+    post:
+      tags: [Candidatos]
+      summary: Crea un candidato (solo ANALISTA)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CandidatoInput' }
+      responses:
+        '201':
+          description: Candidato creado
+        '400': { $ref: '#/components/responses/Invalido' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+  /candidatos/{id}:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: integer } }
+    get:
+      tags: [Candidatos]
+      summary: Obtiene un candidato
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Candidato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  datos: { $ref: '#/components/schemas/Candidato' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+    put:
+      tags: [Candidatos]
+      summary: Actualiza un candidato (solo ANALISTA)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CandidatoInput' }
+      responses:
+        '200': { description: Candidato actualizado }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+    delete:
+      tags: [Candidatos]
+      summary: Elimina un candidato (solo ANALISTA)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Candidato eliminado }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+
+  /ofertas:
+    get:
+      tags: [Ofertas]
+      summary: Lista todas las ofertas (incluye borradores)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Listado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  datos:
+                    type: array
+                    items: { $ref: '#/components/schemas/Oferta' }
+    post:
+      tags: [Ofertas]
+      summary: Crea una oferta (solo ANALISTA)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OfertaInput' }
+      responses:
+        '201': { description: Oferta creada }
+        '400': { $ref: '#/components/responses/Invalido' }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+  /ofertas/{id}:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: integer } }
+    get:
+      tags: [Ofertas]
+      summary: Obtiene una oferta
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Oferta }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+    put:
+      tags: [Ofertas]
+      summary: Actualiza una oferta (solo ANALISTA)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OfertaInput' }
+      responses:
+        '200': { description: Oferta actualizada }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+    delete:
+      tags: [Ofertas]
+      summary: Elimina una oferta sin postulaciones (solo ANALISTA)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Oferta eliminada }
+        '409': { description: La oferta tiene postulaciones registradas }
+  /ofertas/{id}/estado:
+    patch:
+      tags: [Ofertas]
+      summary: Publica, despublica o cierra una oferta
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado]
+              properties:
+                estado: { type: string, enum: [Borrador, Publicada, Cerrada] }
+      responses:
+        '200': { description: Estado actualizado }
+  /ofertas/{id}/postulaciones:
+    get:
+      tags: [Ofertas]
+      summary: Lista las postulaciones de una oferta
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Postulaciones con carpeta CV }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+
+  /solicitudes:
+    get:
+      tags: [Solicitudes]
+      summary: Lista solicitudes según el rol
+      description: El EVALUADOR solo ve las solicitudes asignadas a su nombre.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: q, schema: { type: string } }
+        - { in: query, name: estado, schema: { type: string, enum: [Pendiente, En proceso, Finalizada] } }
+        - { in: query, name: prioridad, schema: { type: string, enum: [Alta, Media, Baja] } }
+      responses:
+        '200': { description: Listado }
+    post:
+      tags: [Solicitudes]
+      summary: Crea una solicitud de evaluación (solo ANALISTA)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SolicitudInput' }
+      responses:
+        '201': { description: Solicitud creada con bitácora inicial }
+        '400': { $ref: '#/components/responses/Invalido' }
+  /solicitudes/{id}:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: integer } }
+    get:
+      tags: [Solicitudes]
+      summary: Detalle con evaluación, bitácora, análisis IA y postulación
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Detalle completo }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+    put:
+      tags: [Solicitudes]
+      summary: Actualiza una solicitud (solo ANALISTA)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SolicitudInput' }
+      responses:
+        '200': { description: Solicitud actualizada }
+    delete:
+      tags: [Solicitudes]
+      summary: Elimina una solicitud (solo ANALISTA)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Solicitud eliminada }
+  /solicitudes/{id}/estado:
+    patch:
+      tags: [Solicitudes]
+      summary: Cambia el estado de una solicitud y registra bitácora
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado]
+              properties:
+                estado: { type: string, enum: [Pendiente, En proceso, Finalizada] }
+      responses:
+        '200': { description: Estado actualizado }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+  /solicitudes/{id}/bitacora:
+    get:
+      tags: [Solicitudes]
+      summary: Historial de estados de la solicitud
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Bitácora }
+  /solicitudes/{id}/evaluacion:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: integer } }
+    get:
+      tags: [Solicitudes]
+      summary: Obtiene la evaluación psicolaboral
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Evaluación o null }
+    put:
+      tags: [Solicitudes]
+      summary: Registra o actualiza la evaluación (solo EVALUADOR asignado)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EvaluacionInput' }
+      responses:
+        '200': { description: Evaluación guardada }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+  /solicitudes/{id}/analisis:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: integer } }
+    get:
+      tags: [IA]
+      summary: Obtiene el último análisis de IA de la solicitud
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Análisis o null
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  datos: { $ref: '#/components/schemas/AnalisisIA' }
+    post:
+      tags: [IA]
+      summary: Genera un análisis de CV con Groq (apoyo, requiere revisión humana)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201':
+          description: Análisis generado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  datos: { $ref: '#/components/schemas/AnalisisIA' }
+                  aviso: { type: string }
+        '422': { description: La postulación no tiene currículum analizable }
+        '503': { description: GROQ_API_KEY no configurada }
+  /solicitudes/{id}/analisis/revision:
+    patch:
+      tags: [IA]
+      summary: Marca el análisis como revisado por una persona
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: integer } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                revision: { type: string, example: Revisado junto al evaluador. }
+      responses:
+        '200': { description: Análisis marcado como revisado }
+
+  /postulaciones:
+    get:
+      tags: [Postulaciones]
+      summary: Lista postulaciones con su carpeta CV
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Listado }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+  /postulaciones/{id}:
+    get:
+      tags: [Postulaciones]
+      summary: Detalle de una postulación
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Postulación }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+  /postulaciones/{id}/cv:
+    get:
+      tags: [Postulaciones]
+      summary: Descarga privada del currículum
+      description: |
+        Solo ANALISTA o el EVALUADOR asignado al candidato. El archivo se guarda
+        en la base de datos dentro de una carpeta lógica y nunca tiene URL pública.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: Archivo del currículum
+          headers:
+            Content-Disposition:
+              schema: { type: string }
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema: { type: string, format: binary }
+        '403': { $ref: '#/components/responses/SinPermiso' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+
+  /dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Métricas del proceso de reclutamiento
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Resumen y últimas solicitudes
+  /ia/estado:
+    get:
+      tags: [IA]
+      summary: Indica si la integración con Groq está configurada
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Estado de la IA
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proveedor: { type: string, example: Groq }
+                  configurada: { type: boolean }
+                  modelo: { type: string, example: openai/gpt-oss-120b }

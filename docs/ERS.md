@@ -1,7 +1,7 @@
 # ERS — Especificación de Requerimientos
 ## MVP Evaluación Psicolaboral — AquaChile
 
-Documento de requisitos actualizado correspondiente al avance de frontend (Evaluación Parcial 2). Describe el alcance implementado, las funcionalidades pendientes y la correspondencia con la problemática de AquaChile.
+Documento de requisitos actualizado a la **entrega final (EA3)**. Describe el MVP full stack implementado: frontend React, API REST en Node/Express, base PGlite/PostgreSQL, autenticación JWT por roles, currículums privados, IA Groq como apoyo y despliegue local.
 
 ---
 
@@ -24,8 +24,13 @@ Las 13 operaciones mínimas del anexo de requerimiento y su estado en esta entre
 | 11 | Registrar la fecha de evaluación | ✅ Implementado | Sección de evaluación en `SolicitudDetallePage.jsx` |
 | 12 | Registrar observaciones o resultados de la evaluación | ✅ Implementado | Sección de evaluación en `SolicitudDetallePage.jsx` |
 | 13 | Visualizar un dashboard con indicadores | ✅ Implementado | `pages/DashboardPage.jsx` |
+| 14 | Publicar y administrar ofertas laborales | ✅ Implementado | `pages/OfertasPage.jsx`, `pages/OfertaFormPage.jsx` |
+| 15 | Recibir postulaciones públicas con currículum | ✅ Implementado | `pages/PortalOfertasPage.jsx`, `pages/PostulacionPage.jsx` |
+| 16 | Generar candidato y solicitud desde una postulación | ✅ Implementado | Acción `postular-oferta` en `context/motorEstado.js` |
 
 **Estados de solicitud:** Pendiente → En proceso → Finalizada (los tres implementados).
+
+**Estados de oferta:** Borrador → Publicada → Cerrada. Solo las ofertas publicadas y vigentes se muestran en el portal público.
 
 ## 2. Vistas
 
@@ -40,6 +45,9 @@ Las 7 vistas de referencia del anexo y su estado:
 | Formulario de nueva solicitud | ✅ Implementada |
 | Detalle de una solicitud | ✅ Implementada |
 | Sección para registrar/actualizar la evaluación | ✅ Implementada (dentro del detalle) |
+| Portal público de ofertas | ✅ Implementada (`/postular`) |
+| Formulario público de postulación | ✅ Implementada (`/postular/:ofertaId`) |
+| Gestión interna de ofertas | ✅ Implementada (`/ofertas`, `/ofertas/nueva`, `/ofertas/:id`) |
 
 Se agregó además una vista de error **404** (`pages/NoEncontradaPage.jsx`) para no dejar enlaces sin destino.
 
@@ -57,9 +65,29 @@ Campos requeridos por el anexo (todos implementados) más campos complementarios
 | Familia de cargo | Sí | ✅ |
 | Origen (externo/interno) | No | ✅ Complementario |
 | Ubicación del cargo | No | ✅ Complementario |
-| Unidad contratante | No | ✅ Complementario |
+| Departamento | No | ✅ Complementario |
 | Fecha de postulación | No | ✅ Complementario |
 | Requiere referencia | No | ✅ Complementario |
+| Canal de origen (interno/portal público) | No | ✅ Complementario |
+
+### Oferta laboral
+| Campo | Implementado |
+|-------|--------------|
+| Cargo | ✅ |
+| Familia de cargo | ✅ |
+| Ubicación | ✅ |
+| Departamento | ✅ |
+| Modalidad (Presencial/Híbrida/Remota) | ✅ |
+| Funciones | ✅ |
+| Beneficios | ✅ (opcional) |
+| Sueldo o rango | ✅ (opcional) |
+| Cantidad de vacantes | ✅ (entero ≥ 1) |
+| Fecha de publicación | ✅ (no futura) |
+| Fecha de cierre | ✅ (≥ publicación) |
+| Descripción | ✅ (mínimo 20 caracteres) |
+| Requisitos | ✅ (mínimo 15 caracteres) |
+| Estado | ✅ (Borrador / Publicada / Cerrada) |
+| Profesional responsable | ✅ |
 
 ### Solicitud de evaluación
 | Campo | Implementado |
@@ -74,6 +102,9 @@ Campos requeridos por el anexo (todos implementados) más campos complementarios
 | Prioridad | ✅ Complementario |
 | Fecha de entrevista | ✅ Complementario |
 | Fecha de informe | ✅ Complementario (se registra al finalizar) |
+| Oferta de origen | ✅ Complementario (postulaciones del portal) |
+| Canal | ✅ Complementario (Portal público) |
+| Currículum adjunto | ✅ Complementario (archivo real persistido en `archivos_cv` con carpeta lógica, hash SHA-256 y descarga privada) |
 
 ### Evaluación
 | Campo | Implementado |
@@ -89,22 +120,25 @@ Campos requeridos por el anexo (todos implementados) más campos complementarios
 | Requisito | Estado | Detalle |
 |-----------|--------|---------|
 | Usabilidad | ✅ | Navegación con barra superior, migas de pan y estados vacíos con mensajes claros. |
+| Identidad visual | ✅ | Paleta corporativa marina, etiquetas de estado con color e ícono, e iconografía coherente en tarjetas y secciones. |
+| Accesibilidad | ✅ | Foco visible, contraste de texto, estados que no dependen solo del color y soporte para movimiento reducido. |
 | Responsividad | ✅ | Maquetación Bootstrap 5 verificada en móvil, tablet y escritorio. |
 | Validaciones | ✅ | Formularios con validación de campos, formato y reglas de negocio (correo único, fechas coherentes, solicitud activa única). |
 | Trazabilidad | ✅ | Bitácora de cambios de estado por solicitud (quién, cuándo, anterior → nuevo). |
-| Seguridad básica / privacidad | ⚠️ Parcial | Perfiles con permisos diferenciados; sin autenticación real en esta etapa. |
-| Confiabilidad | ⚠️ Parcial | Manejo de errores y estados vacíos; persistencia real pendiente (etapa final). |
+| Seguridad básica / privacidad | ✅ | JWT de acceso y refresh rotativo, roles aplicados en backend, contraseñas con bcrypt, CORS restringido, rate limit, CV privados y consentimiento explícito. |
+| Confiabilidad | ✅ | Persistencia real en PGlite/PostgreSQL, manejo de errores, estados vacíos, transacciones para postulación y 79 pruebas backend. |
 | Mantenibilidad | ✅ | Código modular (contexto, utilidades, componentes), sin comentarios y con pruebas automatizadas. |
-| Despliegue | ⚠️ Pendiente | Correspondiente a la etapa final. |
+| Despliegue | ✅ | Local documentado y verificado; Dockerfile y render.yaml como alternativa. |
 
-## 5. Funcionalidades fuera de esta etapa
+## 5. Integración implementada en la etapa final
 
-De acuerdo con el anexo, la integración con backend y base de datos **no es condición** de la Evaluación Parcial 2. Quedan para la etapa final:
-
-- Backend monolítico (API REST) para gestionar candidatos, solicitudes y evaluaciones.
-- Base de datos con persistencia y relación candidato → solicitud → evaluación.
-- Autenticación y gestión de usuarios.
-- Despliegue de frontend y backend en servicios gratuitos.
+- API REST en Node.js + Express para candidatos, ofertas, postulaciones, solicitudes, evaluaciones, bitácora y dashboard.
+- Base persistente PGlite (local) o PostgreSQL (`DATABASE_URL`) con relación oferta → postulación → candidato → solicitud → evaluación y carpeta CV.
+- Almacenamiento real del currículum en `BYTEA`, validación de firma, hash SHA-256 y descarga privada autorizada.
+- Autenticación JWT con refresh token rotativo, logout y roles ANALISTA/EVALUADOR/JEFATURA.
+- Análisis de currículum con Groq como apoyo, con revisión humana registrada.
+- Documentación OpenAPI/Swagger, 195 pruebas frontend, 79 pruebas backend y despliegue local.
+- La notificación por correo permanece simulada en la interfaz.
 
 ## 6. Correspondencia con la problemática
 
@@ -115,3 +149,5 @@ De acuerdo con el anexo, la integración con backend y base de datos **no es con
 | Seguimiento manual y tiempo perdido | Listados con filtros y búsqueda; dashboard con indicadores. |
 | Falta de indicadores | Tiempo medio solicitud→informe, tasa de recomendación y distribución por familia de cargo. |
 | Dificultad para distinguir quién registra vs. quién evalúa | Tres perfiles con permisos diferenciados. |
+| Postulaciones recibidas por canales dispersos | Portal público de ofertas con postulación en línea y currículum. |
+| Registro manual de cada postulante | La postulación crea o reutiliza el candidato, genera la solicitud pendiente y registra la bitácora automáticamente. |

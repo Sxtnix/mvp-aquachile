@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+coverage
+**/coverage
+dist
+**/dist
+.git
+.gitignore
+backend/.env
+backend/data
+*.log
+respaldo_mvp_aquachile.zip

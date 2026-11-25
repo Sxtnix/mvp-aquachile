@@ -1,5 +1,13 @@
 export const ESTADOS_SOLICITUD = ["Pendiente", "En proceso", "Finalizada"];
 
+export const ESTADOS_OFERTA = ["Borrador", "Publicada", "Cerrada"];
+
+export const MODALIDADES = ["Presencial", "Híbrida", "Remota"];
+
+export const FORMATOS_CURRICULUM = [".pdf", ".doc", ".docx"];
+
+export const TAMANO_MAX_CURRICULUM = 5 * 1024 * 1024;
+
 export const RESULTADOS_EVALUACION = [
   "Apto",
   "Apto con observaciones",

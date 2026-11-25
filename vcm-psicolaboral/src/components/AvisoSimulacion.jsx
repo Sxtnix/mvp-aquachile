@@ -1,10 +1,28 @@
+import { useApp } from "../context/AppContext.jsx";
+
 export default function AvisoSimulacion() {
+  const { usaApi } = useApp();
+
   return (
-    <div className="alert alert-info d-flex align-items-start gap-2 py-2 small mb-4" role="status">
-      <span aria-hidden="true">ℹ️</span>
+    <div
+      className="aviso-contexto mb-4"
+      role="status"
+    >
+      <i className="bi bi-info-circle-fill" aria-hidden="true" />
       <span>
-        Entorno de demostración: los datos son ficticios y se guardan solo en
-        memoria. Al recargar la página se restablecen.
+        {usaApi ? (
+          <>
+            <strong className="fw-semibold">Backend local conectado:</strong>{" "}
+            los datos se guardan de forma persistente y se comparten entre
+            usuarios autorizados.
+          </>
+        ) : (
+          <>
+            <strong className="fw-semibold">Entorno de demostración:</strong>{" "}
+            los datos son ficticios y se guardan solo en memoria. Al recargar la
+            página se restablecen.
+          </>
+        )}
       </span>
     </div>
   );

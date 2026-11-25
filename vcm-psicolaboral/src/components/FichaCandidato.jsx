@@ -1,8 +1,19 @@
+import EtiquetaEstado from "./EtiquetaEstado.jsx";
+
+function iniciales(nombre = "") {
+  return nombre
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0]?.toUpperCase())
+    .join("");
+}
+
 export default function FichaCandidato({
   nombre,
   cargo,
   familia,
-  estado,
+  estado = "Sin solicitud",
   correo,
   telefono,
   ubicacion,
@@ -10,44 +21,59 @@ export default function FichaCandidato({
 }) {
   return (
     <div className="col-12 col-md-6 col-xl-4">
-      <div className="card card-altura shadow-sm">
+      <article className="card tarjeta-vc ficha-candidato">
         <div className="card-body">
-          <div className="d-flex justify-content-between align-items-start gap-2">
-            <h3 className="h5 mb-1">{nombre}</h3>
-            {estado ? (
-              <span className="badge text-bg-secondary flex-shrink-0">
-                {estado}
-              </span>
-            ) : null}
+          <div className="d-flex align-items-start gap-3 mb-3">
+            <span className="avatar-iniciales" aria-hidden="true">
+              {iniciales(nombre)}
+            </span>
+            <div className="flex-grow-1 min-w-0">
+              <h3 className="h5 mb-1 text-break">{nombre}</h3>
+              <p className="small text-secondary mb-0">
+                <i className="bi bi-briefcase me-1 texto-aqua" aria-hidden="true" />
+                {cargo}
+              </p>
+            </div>
+            <EtiquetaEstado estado={estado} />
           </div>
 
-          <p className="text-secondary mb-2">{cargo}</p>
+          <ul className="ficha-datos">
+            {familia ? (
+              <li>
+                <i className="bi bi-diagram-3" aria-hidden="true" />
+                <span>{familia}</span>
+              </li>
+            ) : null}
 
-          {familia ? (
-            <p className="small mb-1">
-              <span className="text-secondary">Familia:</span> {familia}
-            </p>
-          ) : null}
+            {ubicacion ? (
+              <li>
+                <i className="bi bi-geo-alt" aria-hidden="true" />
+                <span>{ubicacion}</span>
+              </li>
+            ) : null}
 
-          {ubicacion ? (
-            <p className="small mb-1">
-              <span className="text-secondary">Ubicación:</span> {ubicacion}
-            </p>
-          ) : null}
+            {correo ? (
+              <li>
+                <i className="bi bi-envelope" aria-hidden="true" />
+                <span className="text-break">{correo}</span>
+              </li>
+            ) : null}
 
-          {correo ? (
-            <p className="mb-1 small text-break">{correo}</p>
-          ) : null}
-
-          {telefono ? (
-            <p className="mb-0 small text-secondary">{telefono}</p>
-          ) : null}
+            {telefono ? (
+              <li>
+                <i className="bi bi-telephone" aria-hidden="true" />
+                <span>{telefono}</span>
+              </li>
+            ) : null}
+          </ul>
 
           {acciones ? (
-            <div className="d-flex flex-wrap gap-2 mt-3">{acciones}</div>
+            <div className="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
+              {acciones}
+            </div>
           ) : null}
         </div>
-      </div>
+      </article>
     </div>
   );
 }

@@ -285,3 +285,86 @@ export const bitacoraInicial = [
   { id: 14, solicitudId: 7, fecha: "2026-10-14", estadoAnterior: "Pendiente", estadoNuevo: "En proceso", responsable: "Valeria Ospina" },
   { id: 15, solicitudId: 8, fecha: "2026-10-06", estadoAnterior: null, estadoNuevo: "Pendiente", responsable: "Ignacia Ferrer" },
 ];
+
+export const ofertasIniciales = [
+  {
+    id: 1,
+    cargo: "Técnico de Mantenimiento",
+    familia: "Técnico A",
+    ubicacion: "Planta Magallanes",
+    unidad: "Mantenimiento",
+    vacantes: 2,
+    fechaPublicacion: "2026-11-01",
+    fechaCierre: "2026-12-15",
+    estado: "Publicada",
+    responsable: "Valeria Ospina",
+    descripcion:
+      "Mantenimiento preventivo y correctivo de equipos de planta, con turnos rotativos y foco en seguridad operacional.",
+    requisitos:
+      "Técnico en mecánica industrial o electricidad. Experiencia mínima de 2 años en plantas de proceso. Manejo de herramientas de diagnóstico.",
+  },
+  {
+    id: 2,
+    cargo: "Analista de Calidad",
+    familia: "Profesional A",
+    ubicacion: "Oficina Central",
+    unidad: "Calidad",
+    vacantes: 1,
+    fechaPublicacion: "2026-11-03",
+    fechaCierre: "2026-12-05",
+    estado: "Publicada",
+    responsable: "Héctor Bustos",
+    descripcion:
+      "Apoyo al sistema de gestión de calidad, auditorías internas y seguimiento de indicadores de proceso.",
+    requisitos:
+      "Título profesional en ingeniería, tecnología de alimentos o carrera afín. Conocimiento de normas ISO y herramientas de mejora continua.",
+  },
+  {
+    id: 3,
+    cargo: "Operario de Empaque",
+    familia: "Operario Calificado",
+    ubicacion: "Planta Puerto Aysén",
+    unidad: "Logística",
+    vacantes: 3,
+    fechaPublicacion: "2026-11-05",
+    fechaCierre: "2026-11-30",
+    estado: "Publicada",
+    responsable: "Ignacia Ferrer",
+    descripcion:
+      "Acondicionamiento y empaque de producto terminado, cumpliendo estándares de inocuidad y trazabilidad.",
+    requisitos:
+      "Enseñanza media completa. Disponibilidad para turnos. Experiencia en líneas de empaque deseable.",
+  },
+  {
+    id: 4,
+    cargo: "Jefe de Turno",
+    familia: "Jefatura",
+    ubicacion: "Planta San Antonio",
+    unidad: "Operaciones",
+    vacantes: 1,
+    fechaPublicacion: "2026-10-01",
+    fechaCierre: "2026-10-30",
+    estado: "Cerrada",
+    responsable: "Valeria Ospina",
+    descripcion:
+      "Coordinación del equipo de turno y control de la operación diaria de planta.",
+    requisitos:
+      "Experiencia previa en supervisión de equipos operativos. Formación técnica o profesional en áreas afines.",
+  },
+  {
+    id: 5,
+    cargo: "Ingeniero de Procesos",
+    familia: "Profesional A",
+    ubicacion: "Centro de Distribución Rancagua",
+    unidad: "Calidad",
+    vacantes: 1,
+    fechaPublicacion: "2026-11-08",
+    fechaCierre: "2026-12-20",
+    estado: "Publicada",
+    responsable: "Héctor Bustos",
+    descripcion:
+      "Optimización de procesos productivos, análisis de datos y liderazgo de proyectos de mejora.",
+    requisitos:
+      "Ingeniería civil industrial, química o afín. Experiencia en procesos productivos y manejo de indicadores.",
+  },
+];

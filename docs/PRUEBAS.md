@@ -1,87 +1,196 @@
-# Evidencia de pruebas — MVP Evaluación Psicolaboral
+# Informe de pruebas — MVP de Reclutamiento y Evaluación Psicolaboral AquaChile
 
-Pruebas automatizadas con **Vitest** y **Testing Library** para la lógica y los componentes relevantes del frontend.
+## 1. Alcance
 
-## Cómo ejecutarlas
+Se probaron por separado **frontend** y **backend**, con umbral mínimo de
+**85%** en statements, branches, functions y lines.
+
+| Suite | Herramientas | Pruebas | Enfoque |
+|---|---|---|---|
+| Frontend | Vitest + Testing Library + jsdom | **195** | Componentes, páginas, rutas protegidas, cliente REST, contexto API/local, IA y CV |
+| Backend | Vitest + Supertest + PGlite en memoria | **79** | Auth, roles, CRUD, postulaciones multipart, CV privado, IA, dashboard y errores |
+
+## 2. Cómo ejecutar
 
 ```bash
-npm run test            # Ejecuta todas las pruebas una vez
-npm run test:watch      # Modo watch (desarrollo)
-npm run test:coverage   # Ejecuta y genera reporte de cobertura
+# Frontend
+cd vcm-psicolaboral
+npm test
+npm run test:coverage
+npm run lint
+npm run build
+
+# Backend
+cd ../backend
+npm test
+npm run test:coverage
 ```
 
-## Resultado de la última ejecución
+La cobertura HTML se genera en `coverage/` de cada proyecto.
+
+## 3. Resultado frontend
 
 ```
- Test Files  12 passed (12)
-      Tests  85 passed (85)
-   Duration  3.64s
+Test Files  25 passed (25)
+     Tests  195 passed (195)
 ```
-
-### Cobertura
 
 ```
 File               | % Stmts | % Branch | % Funcs | % Lines
 -------------------|---------|----------|---------|--------
-All files          |   91.52 |     81.1 |   94.36 |   92.03
- src/components    |    90.9 |    85.54 |   88.88 |    92.5
- src/context       |    95.45 |    87.09 |     100 |      95
- src/pages         |   85.33 |    62.29 |   89.79 |   85.71
- src/utils         |    95.3 |    91.92 |     100 |   95.71
+All files          |   94.22 |    86.81 |   93.72 |   96.14
+ src/api           |   98.26 |    93.75 |     100 |     100
+ src/components    |   95.74 |    90.21 |   90.47 |   97.72
+ src/context       |   95.6 |    82.74 |     100 |   98.26
+ src/pages         |    90.9 |    82.46 |    87.5 |   93.25
+ src/utils         |   94.88 |    92.44 |     100 |   95.43
 
-Statements   : 91.52% ( 389/425 )
-Branches     : 81.1%  ( 322/397 )
-Functions    : 94.36% ( 134/142 )
-Lines        : 92.03% ( 358/389 )
+Statements   : 94.22% (1044/1108)
+Branches     : 86.81% (994/1145)
+Functions    : 93.72% (284/303)
+Lines        : 96.14% (973/1012)
 ```
 
-## Escenarios probados y su justificación
+Cumple el mínimo de 85% en las cuatro métricas.
 
-Se priorizó probar la **lógica de negocio** y los **flujos críticos** del usuario, porque son los que sostienen la utilidad del MVP ante AquaChile.
+### Escenarios frontend relevantes
 
-### 1. Validaciones de formularios (`utils/validaciones.test.js`)
-Justificación: los formularios son la puerta de entrada de los datos. Un correo duplicado o una fecha incoherente corromperían el seguimiento.
+**Cliente API (`src/api/cliente.test.js`)**
+- Login, logout y propagación de errores de credenciales.
+- Renovación automática ante `401`, con reintento y rotación de token.
+- Fallo de refresh, errores de red y traducción de códigos HTTP.
+- Respuestas JSON y texto plano; lectura de `detalles` de validación.
+- Carga completa de candidatos, ofertas, solicitudes, evaluaciones,
+  bitácora, postulaciones y estado de IA.
+- Tolerancia a fallos parciales.
+- Postulación `multipart/form-data` con un `File` real.
+- Descarga de CV como `blob`, análisis y revisión de IA.
 
-- Formato de correo y teléfono.
-- Candidato: campos obligatorios, correo duplicado (y que al editar se conserve el propio), fecha de postulación no futura, nombre mínimo.
-- Solicitud: candidato inexistente, candidato con solicitud activa única, fecha no futura.
-- Evaluación: campos obligatorios, fecha no anterior a la solicitud, resultado "Sin resultado" rechazado, fundamento obligatorio cuando el resultado es negativo.
+**Contexto (`src/context/AppContext.test.jsx`)**
+- Hidratación de sesión y datos desde el servicio API.
+- Persistencia de todas las mutaciones con verbo y ruta correctos.
+- Manejo de error de persistencia y recarga.
+- Postulación pública, análisis IA, revisión y descarga de CV.
+- Login, logout y recarga.
+- Modo local: datos demo y rechazo explícito de funciones que requieren API.
+- Perfil evaluador (filtrado de solicitudes) y rol desconocido (jefatura).
 
-### 2. Manejo de fechas (`utils/fechas.test.js`)
-Justificación: los indicadores de tiempo y las reglas de coherencia dependen de fechas bien formadas.
+**Rutas y sesión**
+- `RutaProtegida`: estado de carga, redirección a login y contenido autorizado.
+- `LoginPage`: formulario, cuentas demo, login exitoso, error y redirección si
+  ya hay sesión.
+- `App` en modo API: sesión real, enlace a postulaciones, cierre de sesión y
+  portal público.
 
-- Formato ISO, fechas futuras, diferencia en días y formato de presentación.
+**Páginas y componentes**
+- Candidatos: listado, filtros, creación, edición, solo lectura, borrado y
+  validaciones.
+- Ofertas: filtros en una fila, búsqueda expandible, cierre, publicación,
+  edición, borrador sin fecha de publicación y permisos.
+- Portal público: ofertas vigentes, filtros, cierre próximo, vacío y limpieza.
+- Postulación: validaciones, archivo real, folio, carpeta y oferta no
+  disponible.
+- Postulaciones: tabla, carpeta, descarga, error de descarga y modo local.
+- Solicitudes: creación, permisos, fechas, evaluación, bitácora, cambio de
+  estado y detalle con CV/IA.
+- IA: análisis completo, generación, revisión humana, errores, IA no
+  configurada, sin currículum y casos límite.
+- Componentes: `BuscadorExpandible`, `BarraFiltros`, `BandejaSolicitudes`,
+  `AnalisisIa`, `EtiquetaEstado`, `AvisoSimulacion`.
 
-### 3. Indicadores y filtros (`utils/selectores.test.js`)
-Justificación: el dashboard y los listados son el valor central para la jefatura de AquaChile.
+**Utilidades**
+- Fechas ISO, diferencias, formato y fechas futuras.
+- Selectores de indicadores, filtros y resumen del portal.
+- Validaciones de candidato, solicitud, evaluación, oferta y postulación
+  pública, incluido el nuevo campo **Departamento**.
 
-- Conteo por estado, promedio de días solicitud→informe, tasa de recomendación, distribución por familia.
-- Filtros de candidatos (texto, familia, origen) y de solicitudes (estado, responsable, rango de fechas, texto).
+## 4. Resultado backend
 
-### 4. Lógica de estado (`context/motorEstado.test.js`)
-Justificación: la trazabilidad y los permisos son los que separan un CRUD genérico de una solución al problema real.
+```
+Test Files  9 passed (9)
+     Tests  79 passed (79)
+```
 
-- CRUD de candidatos con **eliminación en cascada** (solicitudes, evaluaciones y bitácora).
-- Creación de solicitud con registro automático en bitácora.
-- Cambio de estado que agrega bitácora y **no** duplica registros si el estado no cambia.
-- Guardado y actualización de evaluaciones (upsert).
-- Permisos de los tres perfiles (analista, evaluador, jefatura de solo consulta).
+```
+File               | % Stmts | % Branch | % Funcs | % Lines
+-------------------|---------|----------|---------|--------
+All files          |   98.41 |    87.26 |   96.99 |   98.94
 
-### 5. Componentes (`components/*.test.jsx`)
-Justificación: los componentes reutilizables sostienen varias vistas; un fallo se propaga.
+Statements   : 98.41%
+Branches     : 87.26%
+Functions    : 96.99%
+Lines        : 98.94%
+```
 
-- `EtiquetaEstado`: estilo correcto por estado.
-- `BandejaSolicitudes`: renderizado, filtros por estado/texto y estado vacío.
+Cumple el mínimo de 85% en las cuatro métricas.
 
-### 6. Páginas y flujo de usuario (`pages/*.test.jsx`, `App.test.jsx`)
-Justificación: se verifica el recorrido real del usuario, de registro a evaluación.
+### Escenarios backend relevantes
 
-- `CandidatoFormPage`: errores al enviar vacío, correo duplicado, precarga en edición.
-- `CandidatosPage`: listado, filtro por origen, **eliminación con diálogo de confirmación**.
-- `SolicitudFormPage`: solo ofrece candidatos sin solicitud activa, validación y resumen.
-- `SolicitudesPage` / `DashboardPage`: renderizado correcto e indicadores.
-- **Integración (`App.test.jsx`)**: el Evaluador guarda y finaliza una solicitud asignada; la bitácora y el estado se actualizan. Ruta inexistente muestra la 404.
+- **Autenticación:** login válido, credenciales incorrectas, formato inválido,
+  cuenta deshabilitada, refresh con rotación, logout, `/me`, token inválido y
+  usuario deshabilitado después del login.
+- **Roles:** analista administra; evaluador solo sus solicitudes; jefatura
+  consulta sin modificar; `403` cuando corresponde.
+- **Candidatos:** listado, filtros, CRUD, duplicados, validación, 404 y 400.
+- **Ofertas:** CRUD, filtros, publicación con fecha automática, cierre,
+  borradores, postulaciones asociadas y bloqueo de borrado con postulaciones.
+- **Solicitudes:** filtros por rol, detalle con evaluación/bitácora/análisis,
+  CRUD, cambios de estado, bitácora, evaluación upsert, finalización y
+  permisos.
+- **Postulaciones públicas:** solo ofertas publicadas, postulación multipart,
+  carpeta lógica, hash SHA-256, reutilización de candidato, duplicados,
+  formatos y firmas inválidas, tamaño, oferta vencida y consulta por folio.
+- **CV privado:** descarga autorizada, `Content-Disposition`, `no-store`,
+  restricciones para jefatura y evaluador no asignado.
+- **IA:** estado de configuración, generación con Groq mockeado, consulta,
+  revisión humana, falta de key (`503`), solicitud sin CV (`422`) y permisos.
+- **Dashboard:** métricas globales, filtrado del evaluador, jefatura y salud.
+- **Infraestructura:** migración y seed idempotente, PGlite en memoria y en
+  disco, transacciones commit/rollback, serializadores y OpenAPI.
+- **Errores:** ruta inexistente, JSON malformado, CORS permitido/rechazado y
+  límites de archivo.
 
-## Nota sobre la simulación
+## 5. Prueba de humo con servicios reales
 
-Las pruebas usan los mismos datos ficticios que la aplicación. No se conecta a backend ni base de datos; el estado vive en memoria (Context + `useReducer`), lo que permite probar la lógica de forma determinista.
+Se levantó el backend con PGlite persistente y se verificó:
+
+1. `GET /api/health` → `estado: ok`, `baseDatos: pglite`,
+   `iaConfigurada: true`.
+2. Login del analista → access token y usuario correcto.
+3. `GET /api/dashboard` → métricas y solicitudes.
+4. Postulación pública con un **PDF real** de 204.820 bytes:
+   folio `AQ-2026-B8F186`, carpeta
+   `CV-2026-000001-PRUEBA-SMOKE-CV`, solicitud creada.
+5. `POST /api/solicitudes/34/analisis` con Groq real
+   (`openai/gpt-oss-120b`): análisis estructurado con 4 requisitos y 6
+   preguntas.
+6. `PATCH .../analisis/revision` → revisión humana registrada.
+7. `GET /api/postulaciones/1/cv` → `application/pdf`, 204.820 bytes,
+   `Content-Disposition: attachment` y `Cache-Control: private, no-store`.
+8. Limpieza del candidato de prueba.
+
+La prueba confirma el flujo completo frontend-backend-base-IA-CV sin exponer la
+API key en el repositorio.
+
+## 6. Decisiones de prueba
+
+- Los tests automatizados de IA **mockean `fetch`**, por lo que no consumen
+  tokens ni dependen de internet.
+- El backend usa PGlite en memoria por archivo de prueba, garantizando
+  aislamiento y velocidad.
+- El frontend prueba el modo API con un servicio falso inyectado y conserva
+  pruebas del modo local para no perder la lógica del reducer.
+- Se prueba el comportamiento visible para el usuario (roles, textos, estados,
+  errores) en lugar de detalles de implementación.
+- El umbral de cobertura quedó configurado en el backend; el frontend se
+  verificó contra el mismo mínimo exigido.
+
+## 7. Riesgos residuales
+
+- PGlite no soporta múltiples procesos; para producción se recomienda
+  PostgreSQL.
+- La calidad del análisis de IA depende del texto extraíble del CV; documentos
+  escaneados como imagen pueden producir resultados limitados.
+- No se automatizó un navegador real (E2E con Playwright); se cubrió con
+  Testing Library y pruebas de humo manuales.
+- El envío de correos es simulado.
